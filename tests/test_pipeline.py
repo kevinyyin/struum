@@ -71,6 +71,8 @@ def test_join_letters_regroups_latin_in_zh_alignment():
     assert [w["text"] for w in out] == ["我", "爱", "you，ReSo", "宝", "贝"]
     assert (out[2]["start"], out[2]["end"]) == (3.0, 9.5)
     assert pipeline.join_letters(words[:-1], text) == words[:-1]    # counts differ: unchanged
+    merged = [{"text": "ab", "start": 0.0, "end": 1.0}]
+    assert pipeline.join_letters(merged, "ab") == merged               # already multi-char: unchanged
 
 def test_fetch_lyrics_searches_when_get_is_unsynced_or_wrong_length(monkeypatch):
     import httpx

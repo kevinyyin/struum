@@ -55,7 +55,7 @@ def parse_lrc(text: str) -> list[dict]:
 def join_letters(words: list[dict], text: str) -> list[dict]:
     """zh alignment returns one word per non-space character; regroup them into WORD tokens of text."""
     tokens = WORD.findall(text)
-    if "".join(w["text"] for w in words) != "".join(tokens):
+    if [w["text"] for w in words] != list("".join(tokens)):
         return words
     out, i = [], 0
     for t in tokens:
