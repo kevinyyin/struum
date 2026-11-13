@@ -1,0 +1,10 @@
+yt-dlp
+demucs
+lv-chordia
+beat-this
+whisperx
+fastapi
+uvicorn
+python-dotenv
+httpx
+pytest
