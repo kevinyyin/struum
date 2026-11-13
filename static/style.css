@@ -224,6 +224,9 @@ body:not(.playing-view) main::after { display: none; }
   .side-group { display: none; }
   .col { padding: 22px 18px 140px; }
   .shapes { margin-inline: -18px; padding-inline: 18px; }
+  .pills { position: relative; }
+  .addpl { position: static; } /* the menu spans the controls row instead of running off the screen */
+  .menu { left: 0; right: 0; min-width: 0; }
   .player { left: 50%; width: calc(100vw - 20px); bottom: 10px; }
   main::after { left: 0; }
 }
