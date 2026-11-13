@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import threading
@@ -50,6 +51,15 @@ def work(job: dict, request: dict) -> None:
     job["status"] = "error" if error else "done"
 
 
+@app.middleware("http")
+async def revalidate(request, call_next):
+    # The page's own files change with the code; make the browser check instead of reusing a stale copy.
+    response = await call_next(request)
+    if request.url.path == "/" or request.url.path.startswith("/static/"):
+        response.headers["Cache-Control"] = "no-cache"
+    return response
+
+
 @app.get("/api/config")
 def config():
     return {"spotify_client_id": os.environ.get("SPOTIFY_CLIENT_ID", "")}
@@ -76,6 +86,21 @@ def status(job_id: str):
     if job_id not in jobs:
         raise HTTPException(404, "Unknown song.")
     return jobs[job_id]
+
+
+@app.get("/api/library")
+def library():
+    """Saved sheets, newest first, without their rows."""
+    songs = []
+    for f in pipeline.DATA.glob("*/sheet.json"):
+        try:
+            s = json.loads(f.read_text())
+        except (OSError, ValueError):
+            continue
+        if f.parent.name != s.get("video_id"):  # a job's temp folder, not a finished song
+            continue
+        songs.append({k: s.get(k) for k in ("video_id", "title", "artist", "duration")} | {"made": f.stat().st_mtime})
+    return sorted(songs, key=lambda s: -s["made"])
 
 
 @app.get("/")

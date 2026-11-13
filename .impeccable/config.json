@@ -1,0 +1,44 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "cream-palette",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/spruce-soft/index.html"
+        ],
+        "createdAt": "2026-11-13T16:16:42.000Z",
+        "reason": "user confirmed: owner approved this cream + Spruce palette preview (Strum reference) on 2026-11-13; throwaway decision mock"
+      },
+      {
+        "rule": "cream-palette",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/spruce-soft/spotify.html"
+        ],
+        "createdAt": "2026-11-13T16:16:42.021Z",
+        "reason": "user confirmed: owner approved this cream + Spruce palette preview (Strum reference) on 2026-11-13; throwaway decision mock"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/celluloid/index.html"
+        ],
+        "createdAt": "2026-11-13T16:26:46.331Z",
+        "reason": "rejected decision-round preview, git-ignored and not shipped; its fonts predate DESIGN.md by design"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/spruce/index.html"
+        ],
+        "createdAt": "2026-11-13T16:26:46.353Z",
+        "reason": "rejected decision-round preview, git-ignored and not shipped; its fonts predate DESIGN.md by design"
+      }
+    ]
+  }
+}

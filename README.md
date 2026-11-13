@@ -26,7 +26,14 @@ yt-dlp needs a JavaScript runtime to solve YouTube's challenges. Without one it 
 PATH=/opt/homebrew/bin:$PATH .venv/bin/uvicorn app:app --host 127.0.0.1 --port 8000 --env-file .env
 ```
 
-Open http://127.0.0.1:8000/. Paste a link, or use the Spotify tabs. One song is processed at a time; a second request while one runs is refused.
+Open http://127.0.0.1:8000/ (use `127.0.0.1`, not `localhost`: Spotify only accepts the address you registered).
+
+- **Your songs** (sidebar and its own page) lists every saved sheet, newest first. A song that finished while you were elsewhere gets a teal dot until you open it.
+- **Spotify** has its own page (Recently played, Top tracks, Liked) and a quick list of three recent songs in the sidebar. Songs you already made say **Open sheet**; the rest say **Make sheet**.
+- Paste a YouTube link in the sidebar box for anything else.
+- One song is processed at a time; you can browse while it runs.
+- On a song: capo and transpose steppers, **Suggest capo**, chord diagrams and a suggested strum (tabs), and a floating player. The current line darkens and its chord turns teal.
+- **Practise a part:** the loop button (or `L`) loops the current line; shift-click another line to extend the loop, or drag across the bar to loop several lines. `Space` plays and pauses.
 
 ## Tests
 
@@ -40,11 +47,11 @@ node --test tests/*.mjs
 ## Spotify
 
 1. Create an app at https://developer.spotify.com/dashboard.
-2. Add the redirect URI exactly `http://127.0.0.1:8000/`, and enable the Web API.
+2. Add the redirect URI exactly `http://127.0.0.1:8000/`, and enable the Web API. The page sends its own address as the redirect, so a hosted copy needs its address added here too.
 3. Put the app's client ID in `.env` as `SPOTIFY_CLIENT_ID`.
 4. Log in from the page. The account owner needs Premium for the app to work.
 
-The Liked songs tab hides itself if Spotify refuses it. The logged-in path is unverified until the owner adds a client ID and logs in. A picked song is matched to a YouTube video by artist, title and duration.
+The Liked tab hides itself if Spotify refuses it. A picked song is matched to a YouTube video by artist, title and duration. The login lasts for the browser tab (about an hour); after that the page asks you to log in again.
 
 ## What you get
 
@@ -54,6 +61,8 @@ Each song is saved in `data/<youtube id>/` as `sheet.json`, `sheet.txt`, `sheet.
 - "Suggest capo" picks the fret 0-7 with the most open shapes. For C G Am F it suggests 5 (G D Em C).
 - Lyric timing from LRCLIB gets one global offset correction to line up with the video. If LRCLIB has nothing, lyrics are transcribed with Whisper (prefix the run command with `FORCE_TRANSCRIBE=1` to skip LRCLIB). Title and credit lines before the first lyric ("词：…", "Artist - Title") are dropped. If the lyrics contain Chinese characters (and no kana), they are aligned as Chinese whatever language the audio detection says.
 - Chord fingerings in `static/guitar.json` come from [chords-db](https://github.com/tombatossals/chords-db) (MIT licence; licence text in `static/guitar.json.LICENSE`).
+- Fonts: Schibsted Grotesk and Hanken Grotesk, self-hosted in `static/fonts/` (SIL Open Font License, texts alongside). Thumbnails for saved songs load from YouTube (`i.ytimg.com`); Spotify album art loads from Spotify.
+- A pasted link's YouTube title is shown tidied ("The Beatles - Let It Be (Official Video)" shows as "Let It Be" by "The Beatles"); saved files keep the original title.
 
 ## Known limits
 
@@ -78,4 +87,5 @@ Observed:
 - Let It Be (transcribed): lyrics are recognisable, and the same progression is found, but Whisper returned long segments, so each chord row sits over one very wide merged line (up to ~200 columns in the `.txt`) and chords land less precisely on words than with LRCLIB.
 - 晴天: the server matched the video "晴天 周杰伦 (歌词版)" (GM Lyric, id 3-DteAHyRnI, 270 s). Chords are Em, C, G, Cmaj7, a plausible progression. LRCLIB's title and credit lines ("周杰伦 - 晴天", "词：周杰伦", "曲：周杰伦") are dropped, so the 13 intro chords sit on two chord-only rows before "故事的小黄花". The solfege lines keep whole syllables ("Re So So Si Do Si La"). In `sheet.html`, as on the page, consecutive Chinese characters get no word gap. Timing came from WhisperX alignment, not interpolation: all 50 lyric lines with three or more words have unevenly spaced word starts, and no "alignment failed" warning was logged.
 - The torchcodec warning at startup is harmless.
-- Checked in a browser: lines advance in time with the audio, the page scrolls with them, and the saved `.html` and `.txt` open. Not verified: the Spotify logged-in path.
+- Checked in a browser: lines advance in time with the audio, the page scrolls with them, and the saved `.html` and `.txt` open.
+- Spotify logged-in path verified by the owner's login: Recently played and Top tracks load; picking "Look After You" (The Fray) and "Sailor Song" (Gigi Perez) made full sheets.

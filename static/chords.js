@@ -64,19 +64,19 @@ const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, 
 export function diagramSvg(position, name = "") {
   const x = (i) => 15 + i * 8, y = (f) => 22 + f * 12;
   const p = [`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 70 90" width="70" height="90" role="img"><title>${esc(name)}</title>`,
-    `<g stroke="#000" stroke-width="1" fill="none">`];
+    `<g stroke="#000" stroke-width="1.3" fill="none">`];
   for (let i = 0; i < 6; i++) p.push(`<line x1="${x(i)}" y1="${y(0)}" x2="${x(i)}" y2="${y(4)}"/>`);
-  for (let f = 0; f <= 4; f++) p.push(`<line x1="${x(0)}" y1="${y(f)}" x2="${x(5)}" y2="${y(f)}"${f === 0 && position.baseFret === 1 ? ' stroke-width="3"' : ""}/>`);
+  for (let f = 0; f <= 4; f++) p.push(`<line x1="${x(0)}" y1="${y(f)}" x2="${x(5)}" y2="${y(f)}"${f === 0 && position.baseFret === 1 ? ' stroke-width="4.5"' : ""}/>`);
   position.frets.forEach((f, i) => {
-    if (f === 0) p.push(`<circle cx="${x(i)}" cy="14" r="3"/>`);
-    if (f === -1) p.push(`<path d="M${x(i) - 3} 11L${x(i) + 3} 17M${x(i) + 3} 11L${x(i) - 3} 17"/>`);
+    if (f === 0) p.push(`<circle cx="${x(i)}" cy="13" r="3.2" stroke-width="1.5"/>`);
+    if (f === -1) p.push(`<path d="M${x(i) - 3.2} 9.8L${x(i) + 3.2} 16.2M${x(i) + 3.2} 9.8L${x(i) - 3.2} 16.2" stroke-width="1.6"/>`);
   });
   p.push("</g>");
   for (const b of position.barres ?? []) {
     const s = position.frets.map((f, i) => (f === b ? i : -1)).filter((i) => i >= 0);
-    p.push(`<line x1="${x(s[0])}" y1="${y(b - 0.5)}" x2="${x(s[s.length - 1])}" y2="${y(b - 0.5)}" stroke="#000" stroke-width="6" stroke-linecap="round"/>`);
+    p.push(`<line x1="${x(s[0])}" y1="${y(b - 0.5)}" x2="${x(s[s.length - 1])}" y2="${y(b - 0.5)}" stroke="#000" stroke-width="9" stroke-linecap="round"/>`);
   }
-  position.frets.forEach((f, i) => { if (f > 0) p.push(`<circle cx="${x(i)}" cy="${y(f - 0.5)}" r="3.5"/>`); });
-  if (position.baseFret > 1) p.push(`<text x="1" y="${y(0.5) + 3}" font-size="9">${Number(position.baseFret)}</text>`);
+  position.frets.forEach((f, i) => { if (f > 0) p.push(`<circle cx="${x(i)}" cy="${y(f - 0.5)}" r="4.6"/>`); });
+  if (position.baseFret > 1) p.push(`<text x="1" y="${y(0.5) + 3}" font-size="10" font-weight="700">${Number(position.baseFret)}</text>`);
   return p.join("") + "</svg>";
 }

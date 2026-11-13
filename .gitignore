@@ -5,3 +5,6 @@ data/
 __pycache__/
 .superpowers/
 .pytest_cache/
+.impeccable/mocks/
+.impeccable/review/
+.impeccable/questions/

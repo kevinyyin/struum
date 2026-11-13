@@ -1,0 +1,504 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-13T00:00:00Z",
+  "title": "Design System: Strum",
+  "extensions": {
+    "colorMeta": {
+      "ground": {
+        "role": "neutral",
+        "displayName": "Cream Ground",
+        "canonical": "#f6efe3",
+        "tonalRamp": [
+          "#0f0a04",
+          "#28231a",
+          "#453f35",
+          "#635d53",
+          "#867f75",
+          "#aaa498",
+          "#d0cabe",
+          "#f5eee2"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Paper",
+        "canonical": "#fbf8f2",
+        "tonalRamp": [
+          "#0d0b07",
+          "#26241f",
+          "#423f3b",
+          "#605d58",
+          "#82807b",
+          "#a7a49f",
+          "#cdcac4",
+          "#f1eee8"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "#e6dac6",
+        "tonalRamp": [
+          "#120a00",
+          "#2c2313",
+          "#483e2e",
+          "#665c4b",
+          "#8a7f6c",
+          "#aea390",
+          "#d5c9b5",
+          "#f9edd9"
+        ]
+      },
+      "line-soft": {
+        "role": "neutral",
+        "displayName": "Soft Hairline",
+        "canonical": "#efe6d6",
+        "tonalRamp": [
+          "#100a02",
+          "#2a2317",
+          "#463f32",
+          "#645d4f",
+          "#877f71",
+          "#aca494",
+          "#d2c9ba",
+          "#f6eddd"
+        ]
+      },
+      "pill": {
+        "role": "neutral",
+        "displayName": "Chord Pill",
+        "canonical": "#efe6d6",
+        "tonalRamp": [
+          "#100a02",
+          "#2a2317",
+          "#463f32",
+          "#645d4f",
+          "#877f71",
+          "#aca494",
+          "#d2c9ba",
+          "#f6eddd"
+        ]
+      },
+      "pill-now": {
+        "role": "neutral",
+        "displayName": "Chord Pill, Current Line",
+        "canonical": "#eadfcb",
+        "tonalRamp": [
+          "#110a00",
+          "#2b2313",
+          "#473e2e",
+          "#665c4b",
+          "#897f6d",
+          "#aea390",
+          "#d4c9b6",
+          "#f8edd9"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Rosewood Ink",
+        "canonical": "#2a1c13",
+        "tonalRamp": [
+          "#140802",
+          "#2f2017",
+          "#4c3c32",
+          "#6b5a4f",
+          "#8e7c71",
+          "#b3a095",
+          "#dac6ba",
+          "#feeade"
+        ]
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "Ink 2",
+        "canonical": "#6f5643",
+        "tonalRamp": [
+          "#180600",
+          "#341e0d",
+          "#513a28",
+          "#715845",
+          "#957a66",
+          "#ba9e8a",
+          "#e1c4af",
+          "#ffe8d2"
+        ]
+      },
+      "ink-3": {
+        "role": "neutral",
+        "displayName": "Ink 3",
+        "canonical": "#9a836e",
+        "tonalRamp": [
+          "#170700",
+          "#321f0d",
+          "#4f3b28",
+          "#6e5945",
+          "#927b67",
+          "#b8a08a",
+          "#dec6af",
+          "#ffe9d2"
+        ]
+      },
+      "ink-4": {
+        "role": "neutral",
+        "displayName": "Ink 4",
+        "canonical": "#b9a48f",
+        "tonalRamp": [
+          "#150700",
+          "#30200f",
+          "#4e3c2a",
+          "#6d5a47",
+          "#907c68",
+          "#b5a08c",
+          "#dcc6b1",
+          "#ffead4"
+        ]
+      },
+      "honey": {
+        "role": "secondary",
+        "displayName": "Spruce Honey",
+        "canonical": "#e5bf80",
+        "tonalRamp": [
+          "#1a0500",
+          "#391d00",
+          "#593800",
+          "#795713",
+          "#9d7a3b",
+          "#c39e60",
+          "#e8c58a",
+          "#ffeab8"
+        ]
+      },
+      "honey-tint": {
+        "role": "secondary",
+        "displayName": "Honey Tint",
+        "canonical": "#f3e2c2",
+        "tonalRamp": [
+          "#140800",
+          "#2f2206",
+          "#4c3e22",
+          "#6a5c3f",
+          "#8e7e61",
+          "#b3a384",
+          "#d9c9a9",
+          "#feeccc"
+        ]
+      },
+      "honey-line": {
+        "role": "secondary",
+        "displayName": "Honey Line",
+        "canonical": "#e6cb9b",
+        "tonalRamp": [
+          "#190600",
+          "#351f00",
+          "#523b0a",
+          "#715a2c",
+          "#957c4f",
+          "#bba172",
+          "#e2c797",
+          "#ffebba"
+        ]
+      },
+      "rose": {
+        "role": "secondary",
+        "displayName": "Rosewood",
+        "canonical": "#5a3522",
+        "tonalRamp": [
+          "#1e0100",
+          "#3b1906",
+          "#5a3522",
+          "#7a533f",
+          "#9f7561",
+          "#c69984",
+          "#edbfa9",
+          "#ffe3cc"
+        ]
+      },
+      "teal": {
+        "role": "primary",
+        "displayName": "Abalone Teal",
+        "canonical": "#2f6b6a",
+        "tonalRamp": [
+          "#001213",
+          "#002d2d",
+          "#034a49",
+          "#2c6968",
+          "#518c8b",
+          "#75b1b0",
+          "#9bd8d6",
+          "#befcfa"
+        ]
+      },
+      "teal-tint": {
+        "role": "primary",
+        "displayName": "Teal Tint",
+        "canonical": "#dbe9e4",
+        "tonalRamp": [
+          "#050d0a",
+          "#1c2723",
+          "#37433f",
+          "#55615d",
+          "#77847f",
+          "#9ba8a3",
+          "#c0cec9",
+          "#e4f2ed"
+        ]
+      },
+      "teal-line": {
+        "role": "primary",
+        "displayName": "Teal Line",
+        "canonical": "#c4dbd3",
+        "tonalRamp": [
+          "#010f0a",
+          "#162823",
+          "#31453e",
+          "#4e635c",
+          "#71867e",
+          "#94aaa3",
+          "#bad1c9",
+          "#ddf5ed"
+        ]
+      },
+      "red": {
+        "role": "neutral",
+        "displayName": "Clay Red (errors)",
+        "canonical": "#a3412e",
+        "tonalRamp": [
+          "#220000",
+          "#440e05",
+          "#6a281b",
+          "#924232",
+          "#ba6553",
+          "#dc8d7c",
+          "#fdb7a7",
+          "#ffded0"
+        ]
+      },
+      "abalone": {
+        "role": "tertiary",
+        "displayName": "Abalone",
+        "canonical": "conic-gradient(from 30deg, #2f6b6a, #77b5a9, #3d5378, #8f7bb5, #2f8f7f, #b9d7c4, #2f6b6a)",
+        "tonalRamp": [
+          "#2f6b6a",
+          "#77b5a9",
+          "#3d5378",
+          "#8f7bb5",
+          "#2f8f7f",
+          "#b9d7c4"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Page and song titles (h1)."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Song names in lists; tabs and sheet section labels at 12.5px."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "UI text, meta lines, notes, hints."
+      },
+      "lyric": {
+        "displayName": "Lyric",
+        "purpose": "Sheet rows; 400 weight on the current line; Chinese falls back to PingFang/Hiragino."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Pills, buttons, timestamps, sidebar group headings."
+      },
+      "chord": {
+        "displayName": "Chord",
+        "purpose": "Chord names inside chord pills."
+      }
+    },
+    "shadows": [
+      {
+        "name": "float",
+        "value": "0 0 0 1px #e6dac6, 0 16px 36px -18px rgb(70 40 15 / 0.35)",
+        "purpose": "Floating player."
+      },
+      {
+        "name": "disc",
+        "value": "0 0 0 3px #fbf8f2, 0 0 0 4px #e6dac6, 0 18px 34px -16px rgb(70 40 15 / 0.45)",
+        "purpose": "Processing rosette disc."
+      },
+      {
+        "name": "now-lift",
+        "value": "0 3px 8px -3px rgb(47 107 106 / 0.6)",
+        "purpose": "The sounding chord pill, with a 1px rise."
+      },
+      {
+        "name": "hairline-ring",
+        "value": "0 0 0 1px #efe6d6",
+        "purpose": "Current nav item and song, hovered list row."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease",
+        "value": "cubic-bezier(.16, 1, .3, 1)",
+        "purpose": "All state transitions."
+      },
+      {
+        "name": "lyric-shift",
+        "value": ".35s",
+        "purpose": "Lyric row colour and loop wash."
+      },
+      {
+        "name": "chord-shift",
+        "value": ".25s",
+        "purpose": "Chord pill to/from now."
+      },
+      {
+        "name": "control",
+        "value": ".2s",
+        "purpose": "Play press, timeline hover."
+      },
+      {
+        "name": "rosette-turn",
+        "value": "9s linear infinite",
+        "purpose": "Processing disc rotation."
+      },
+      {
+        "name": "breathe",
+        "value": "1.6s",
+        "purpose": "Current processing step and busy dot."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "narrow",
+        "value": "760px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Chord Pills",
+      "kind": "chip",
+      "refersTo": "chord-pill",
+      "description": "Borderless soft chord pills: rest, current line, and the one sounding now.",
+      "html": "<span class=\"ds-chord\">C</span> <span class=\"ds-chord ds-line-now\">Am</span> <span class=\"ds-chord ds-now\">F</span>",
+      "css": ":host{--ground:#f6efe3;--paper:#fbf8f2;--line:#e6dac6;--line-soft:#efe6d6;--pill:#efe6d6;--pill-now:#eadfcb;--ink:#2a1c13;--ink-2:#6f5643;--ink-3:#9a836e;--ink-4:#b9a48f;--honey:#e5bf80;--honey-tint:#f3e2c2;--honey-line:#e6cb9b;--rose:#5a3522;--teal:#2f6b6a;--teal-tint:#dbe9e4;--teal-line:#c4dbd3;--abalone:conic-gradient(from 30deg,#2f6b6a,#77b5a9,#3d5378,#8f7bb5,#2f8f7f,#b9d7c4,#2f6b6a);--ui:'Schibsted Grotesk',system-ui,sans-serif;--lyric:'Hanken Grotesk','PingFang SC',sans-serif;--ease:cubic-bezier(.16,1,.3,1);} .ds-chord{display:inline-block;font:600 11px/1 var(--ui);color:var(--ink-2);background:var(--pill);padding:5px 7px;border-radius:7px;transition:background-color .25s var(--ease),color .25s var(--ease),box-shadow .25s var(--ease),transform .25s var(--ease);} .ds-line-now{color:var(--rose);background:var(--pill-now);} .ds-now{background:var(--teal);color:var(--paper);box-shadow:0 3px 8px -3px rgb(47 107 106 / .6);transform:translateY(-1px);}"
+    },
+    {
+      "name": "Lyric Rows",
+      "kind": "custom",
+      "refersTo": "chord-pill",
+      "description": "Pale light lyrics with wide word gaps; next line steps darker, current line goes ink; looped rows carry a honey wash.",
+      "html": "<div class=\"ds-row\">When I find myself in times of trouble</div><div class=\"ds-row ds-loop ds-cur\">Mother Mary comes to me</div><div class=\"ds-row ds-next\">Speaking words of wisdom</div>",
+      "css": ":host{--ground:#f6efe3;--paper:#fbf8f2;--line:#e6dac6;--line-soft:#efe6d6;--pill:#efe6d6;--pill-now:#eadfcb;--ink:#2a1c13;--ink-2:#6f5643;--ink-3:#9a836e;--ink-4:#b9a48f;--honey:#e5bf80;--honey-tint:#f3e2c2;--honey-line:#e6cb9b;--rose:#5a3522;--teal:#2f6b6a;--teal-tint:#dbe9e4;--teal-line:#c4dbd3;--abalone:conic-gradient(from 30deg,#2f6b6a,#77b5a9,#3d5378,#8f7bb5,#2f8f7f,#b9d7c4,#2f6b6a);--ui:'Schibsted Grotesk',system-ui,sans-serif;--lyric:'Hanken Grotesk','PingFang SC',sans-serif;--ease:cubic-bezier(.16,1,.3,1);} .ds-row{font:300 16px/1.25 var(--lyric);letter-spacing:.01em;word-spacing:.4em;color:var(--ink-4);padding:4px 8px;border-radius:10px;cursor:pointer;transition:color .35s var(--ease),background-color .35s var(--ease);} .ds-row:hover{background:rgb(251 248 242 / .55);} .ds-next{color:var(--ink-3);} .ds-cur{color:var(--ink);font-weight:400;} .ds-loop{background:rgb(243 226 194 / .45);}"
+    },
+    {
+      "name": "Pill",
+      "kind": "button",
+      "refersTo": "pill",
+      "description": "Default small control: Suggest capo, Save.",
+      "html": "<button class=\"ds-pill\">Suggest capo</button>",
+      "css": ":host{--ground:#f6efe3;--paper:#fbf8f2;--line:#e6dac6;--line-soft:#efe6d6;--pill:#efe6d6;--pill-now:#eadfcb;--ink:#2a1c13;--ink-2:#6f5643;--ink-3:#9a836e;--ink-4:#b9a48f;--honey:#e5bf80;--honey-tint:#f3e2c2;--honey-line:#e6cb9b;--rose:#5a3522;--teal:#2f6b6a;--teal-tint:#dbe9e4;--teal-line:#c4dbd3;--abalone:conic-gradient(from 30deg,#2f6b6a,#77b5a9,#3d5378,#8f7bb5,#2f8f7f,#b9d7c4,#2f6b6a);--ui:'Schibsted Grotesk',system-ui,sans-serif;--lyric:'Hanken Grotesk','PingFang SC',sans-serif;--ease:cubic-bezier(.16,1,.3,1);} .ds-pill{display:inline-flex;align-items:center;height:27px;padding:0 10px;border-radius:9px;font:600 11.5px var(--ui);border:1px solid var(--line);background:var(--paper);color:var(--ink);cursor:pointer;} .ds-pill:hover{border-color:var(--ink-4);} .ds-pill:focus-visible{outline:2px solid var(--teal);outline-offset:2px;}"
+    },
+    {
+      "name": "Capo Stepper (honey pill)",
+      "kind": "button",
+      "refersTo": "pill-honey",
+      "description": "Honey marks capo; the stepper holds minus/plus and a tabular number.",
+      "html": "<div class=\"ds-pill ds-honey\"><span>Capo</span><button aria-label=\"down\"><svg width=\"9\" height=\"9\" viewBox=\"0 0 10 10\"><path d=\"M2 5h6\" stroke=\"currentColor\" stroke-width=\"1.4\" stroke-linecap=\"round\"/></svg></button><output>2</output><button aria-label=\"up\"><svg width=\"9\" height=\"9\" viewBox=\"0 0 10 10\"><path d=\"M2 5h6M5 2v6\" stroke=\"currentColor\" stroke-width=\"1.4\" stroke-linecap=\"round\"/></svg></button></div>",
+      "css": ":host{--ground:#f6efe3;--paper:#fbf8f2;--line:#e6dac6;--line-soft:#efe6d6;--pill:#efe6d6;--pill-now:#eadfcb;--ink:#2a1c13;--ink-2:#6f5643;--ink-3:#9a836e;--ink-4:#b9a48f;--honey:#e5bf80;--honey-tint:#f3e2c2;--honey-line:#e6cb9b;--rose:#5a3522;--teal:#2f6b6a;--teal-tint:#dbe9e4;--teal-line:#c4dbd3;--abalone:conic-gradient(from 30deg,#2f6b6a,#77b5a9,#3d5378,#8f7bb5,#2f8f7f,#b9d7c4,#2f6b6a);--ui:'Schibsted Grotesk',system-ui,sans-serif;--lyric:'Hanken Grotesk','PingFang SC',sans-serif;--ease:cubic-bezier(.16,1,.3,1);} .ds-pill{display:inline-flex;align-items:center;gap:6px;height:27px;padding:0 4px 0 10px;border-radius:9px;font:600 11.5px var(--ui);border:1px solid var(--honey-line);background:var(--honey-tint);color:var(--rose);} .ds-pill button{width:19px;height:19px;border-radius:6px;border:0;display:grid;place-items:center;background:rgb(90 53 34 / .08);color:inherit;padding:0;cursor:pointer;} .ds-pill button:hover{background:rgb(90 53 34 / .16);} .ds-pill button:focus-visible{outline:2px solid var(--teal);outline-offset:2px;} .ds-pill output{min-width:16px;text-align:center;font-variant-numeric:tabular-nums;}"
+    },
+    {
+      "name": "Link Box",
+      "kind": "input",
+      "refersTo": "link-box",
+      "description": "Paste a YouTube link; honey submit inside the field.",
+      "html": "<form class=\"ds-paste\"><input placeholder=\"YouTube link\"><button type=\"button\">Make sheet</button></form>",
+      "css": ":host{--ground:#f6efe3;--paper:#fbf8f2;--line:#e6dac6;--line-soft:#efe6d6;--pill:#efe6d6;--pill-now:#eadfcb;--ink:#2a1c13;--ink-2:#6f5643;--ink-3:#9a836e;--ink-4:#b9a48f;--honey:#e5bf80;--honey-tint:#f3e2c2;--honey-line:#e6cb9b;--rose:#5a3522;--teal:#2f6b6a;--teal-tint:#dbe9e4;--teal-line:#c4dbd3;--abalone:conic-gradient(from 30deg,#2f6b6a,#77b5a9,#3d5378,#8f7bb5,#2f8f7f,#b9d7c4,#2f6b6a);--ui:'Schibsted Grotesk',system-ui,sans-serif;--lyric:'Hanken Grotesk','PingFang SC',sans-serif;--ease:cubic-bezier(.16,1,.3,1);} .ds-paste{display:flex;align-items:center;gap:6px;height:34px;width:220px;padding:0 3px 0 10px;border-radius:10px;background:var(--paper);border:1px solid var(--line);font:13px var(--ui);} .ds-paste:focus-within{border-color:var(--ink-4);} .ds-paste input{flex:1;min-width:0;border:0;background:transparent;outline:none;font:12.5px var(--ui);color:var(--ink);} .ds-paste input::placeholder{color:var(--ink-2);} .ds-paste button{border:0;font:600 11.5px var(--ui);color:var(--rose);background:var(--honey-tint);padding:5px 8px;border-radius:7px;cursor:pointer;} .ds-paste button:hover{background:var(--honey-line);}"
+    },
+    {
+      "name": "Sidebar Nav",
+      "kind": "nav",
+      "refersTo": "nav-item-current",
+      "description": "Quiet nav with stroked SVG icons; current item sits on paper with a hairline ring.",
+      "html": "<nav class=\"ds-nav\"><a href=\"#\" aria-current=\"page\"><svg viewBox=\"0 0 16 16\"><path d=\"M3 2.5h7.5L13 5v8.5H3z\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.4\" stroke-linejoin=\"round\"/><path d=\"M5.5 8h5M5.5 10.5h3.5\" stroke=\"currentColor\" stroke-width=\"1.4\" stroke-linecap=\"round\"/></svg>Your songs</a><a href=\"#\"><svg viewBox=\"0 0 16 16\"><circle cx=\"8\" cy=\"8\" r=\"6\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.4\"/></svg>Spotify</a></nav>",
+      "css": ":host{--ground:#f6efe3;--paper:#fbf8f2;--line:#e6dac6;--line-soft:#efe6d6;--pill:#efe6d6;--pill-now:#eadfcb;--ink:#2a1c13;--ink-2:#6f5643;--ink-3:#9a836e;--ink-4:#b9a48f;--honey:#e5bf80;--honey-tint:#f3e2c2;--honey-line:#e6cb9b;--rose:#5a3522;--teal:#2f6b6a;--teal-tint:#dbe9e4;--teal-line:#c4dbd3;--abalone:conic-gradient(from 30deg,#2f6b6a,#77b5a9,#3d5378,#8f7bb5,#2f8f7f,#b9d7c4,#2f6b6a);--ui:'Schibsted Grotesk',system-ui,sans-serif;--lyric:'Hanken Grotesk','PingFang SC',sans-serif;--ease:cubic-bezier(.16,1,.3,1);} .ds-nav{display:grid;gap:1px;width:220px;padding:8px;background:var(--ground);font:13px var(--ui);} .ds-nav a{display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:9px;color:var(--ink-2);text-decoration:none;font-weight:500;} .ds-nav a:hover{color:var(--ink);background:rgb(251 248 242 / .6);} .ds-nav a:focus-visible{outline:2px solid var(--teal);outline-offset:2px;} .ds-nav a[aria-current=page]{background:var(--paper);color:var(--ink);box-shadow:0 0 0 1px var(--line-soft);font-weight:600;} .ds-nav svg{width:16px;height:16px;flex:none;}"
+    },
+    {
+      "name": "Floating Player",
+      "kind": "custom",
+      "refersTo": "player",
+      "description": "Paper bar with the rosette play button, segmented timeline (teal done, honey loop) and loop toggle.",
+      "html": "<div class=\"ds-player\"><button class=\"ds-play\" aria-label=\"Play\"><svg width=\"12\" height=\"13\" viewBox=\"0 0 12 13\"><path d=\"M2 1.2v10.6a.8.8 0 0 0 1.2.7l8.4-5.3a.8.8 0 0 0 0-1.4L3.2.5A.8.8 0 0 0 2 1.2z\" fill=\"currentColor\"/></svg></button><span class=\"ds-t ds-now\">0:19</span><div class=\"ds-track\"><i class=\"done\"></i><i class=\"done\"></i><i class=\"loop\"></i><i></i><i></i><i></i></div><span class=\"ds-t\">4:02</span><button class=\"ds-ico\" aria-pressed=\"true\" aria-label=\"Loop\"><svg width=\"16\" height=\"14\" viewBox=\"0 0 18 16\"><path d=\"M3 7.5V6a3 3 0 0 1 3-3h8l-2.5-2.2M15 8.5V10a3 3 0 0 1-3 3H4l2.5 2.2\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg></button></div>",
+      "css": ":host{--ground:#f6efe3;--paper:#fbf8f2;--line:#e6dac6;--line-soft:#efe6d6;--pill:#efe6d6;--pill-now:#eadfcb;--ink:#2a1c13;--ink-2:#6f5643;--ink-3:#9a836e;--ink-4:#b9a48f;--honey:#e5bf80;--honey-tint:#f3e2c2;--honey-line:#e6cb9b;--rose:#5a3522;--teal:#2f6b6a;--teal-tint:#dbe9e4;--teal-line:#c4dbd3;--abalone:conic-gradient(from 30deg,#2f6b6a,#77b5a9,#3d5378,#8f7bb5,#2f8f7f,#b9d7c4,#2f6b6a);--ui:'Schibsted Grotesk',system-ui,sans-serif;--lyric:'Hanken Grotesk','PingFang SC',sans-serif;--ease:cubic-bezier(.16,1,.3,1);} .ds-player{width:480px;height:54px;border-radius:17px;background:var(--paper);box-shadow:0 0 0 1px var(--line),0 16px 36px -18px rgb(70 40 15 / .35);display:grid;grid-template-columns:auto auto 1fr auto auto;align-items:center;gap:12px;padding:0 10px 0 8px;font:13px var(--ui);} .ds-play{width:38px;height:38px;border-radius:50%;border:0;display:grid;place-items:center;color:var(--paper);background:radial-gradient(circle,var(--ink) 0 14.5px,var(--paper) 14.5px 15.5px,transparent 15.5px),var(--abalone);cursor:pointer;transition:transform .2s var(--ease);} .ds-play:active{transform:scale(.94);} .ds-play:focus-visible,.ds-ico:focus-visible{outline:2px solid var(--teal);outline-offset:2px;} .ds-t{font-size:11.5px;color:var(--ink-2);font-variant-numeric:tabular-nums;} .ds-now{color:var(--ink);font-weight:600;} .ds-track{height:22px;display:flex;align-items:center;cursor:pointer;} .ds-track i{flex:1;height:8px;transform:scaleY(.375);background:var(--line);box-shadow:inset -1px 0 0 var(--paper);transition:transform .2s var(--ease);} .ds-track:hover i{transform:scaleY(.625);} .ds-track i.done{background:var(--teal);} .ds-track i.loop{background:var(--honey);transform:none;} .ds-ico{width:32px;height:32px;border-radius:9px;border:0;display:grid;place-items:center;background:transparent;color:var(--ink-2);cursor:pointer;} .ds-ico:hover{background:var(--line-soft);color:var(--ink);} .ds-ico[aria-pressed=true]{background:var(--honey-tint);color:var(--rose);}"
+    },
+    {
+      "name": "Song List Row",
+      "kind": "card",
+      "refersTo": "act-open",
+      "description": "Library row: art, title, artist, action pill that warms to honey on hover or reads teal Open when the sheet exists.",
+      "html": "<ul class=\"ds-list\"><li class=\"ds-item\"><span class=\"ds-art\"></span><div><b>Let It Be</b><span>The Beatles</span></div><button class=\"ds-act ds-open\">Open</button></li><li class=\"ds-item\"><span class=\"ds-art\"></span><div><b>Look After You</b><span>The Fray</span></div><button class=\"ds-act\">Make sheet</button></li></ul>",
+      "css": ":host{--ground:#f6efe3;--paper:#fbf8f2;--line:#e6dac6;--line-soft:#efe6d6;--pill:#efe6d6;--pill-now:#eadfcb;--ink:#2a1c13;--ink-2:#6f5643;--ink-3:#9a836e;--ink-4:#b9a48f;--honey:#e5bf80;--honey-tint:#f3e2c2;--honey-line:#e6cb9b;--rose:#5a3522;--teal:#2f6b6a;--teal-tint:#dbe9e4;--teal-line:#c4dbd3;--abalone:conic-gradient(from 30deg,#2f6b6a,#77b5a9,#3d5378,#8f7bb5,#2f8f7f,#b9d7c4,#2f6b6a);--ui:'Schibsted Grotesk',system-ui,sans-serif;--lyric:'Hanken Grotesk','PingFang SC',sans-serif;--ease:cubic-bezier(.16,1,.3,1);} .ds-list{list-style:none;padding:0;margin:0;width:420px;font:13px/1.4 var(--ui);color:var(--ink);} .ds-item{display:grid;grid-template-columns:44px 1fr auto;gap:12px;align-items:center;padding:8px;border-radius:11px;cursor:pointer;} .ds-item+.ds-item{box-shadow:0 -1px 0 var(--line-soft);} .ds-item:hover{background:var(--paper);box-shadow:0 0 0 1px var(--line-soft);} .ds-art{width:44px;height:44px;border-radius:8px;background:var(--line-soft);} .ds-item b{display:block;font-weight:600;font-size:13.5px;} .ds-item span{display:block;font-size:12px;color:var(--ink-2);} .ds-act{height:27px;padding:0 10px;border-radius:9px;border:1px solid var(--line);background:var(--paper);font:600 11.5px var(--ui);color:var(--ink);cursor:pointer;} .ds-act:hover{border-color:var(--ink-4);} .ds-act:focus-visible{outline:2px solid var(--teal);outline-offset:2px;} .ds-item:hover .ds-act:not(.ds-open){background:var(--honey-tint);border-color:var(--honey-line);color:var(--rose);} .ds-open{background:var(--teal-tint);border-color:var(--teal-line);color:var(--teal);}"
+    },
+    {
+      "name": "Processing Rosette and Steps",
+      "kind": "custom",
+      "refersTo": "player",
+      "description": "Turning abalone rosette disc and five in-place step bars.",
+      "html": "<div class=\"ds-job\"><div class=\"ds-disc\"></div><ol class=\"ds-steps\"><li class=\"done\"></li><li class=\"done\"></li><li class=\"now\"></li><li></li><li></li></ol></div>",
+      "css": ":host{--ground:#f6efe3;--paper:#fbf8f2;--line:#e6dac6;--line-soft:#efe6d6;--pill:#efe6d6;--pill-now:#eadfcb;--ink:#2a1c13;--ink-2:#6f5643;--ink-3:#9a836e;--ink-4:#b9a48f;--honey:#e5bf80;--honey-tint:#f3e2c2;--honey-line:#e6cb9b;--rose:#5a3522;--teal:#2f6b6a;--teal-tint:#dbe9e4;--teal-line:#c4dbd3;--abalone:conic-gradient(from 30deg,#2f6b6a,#77b5a9,#3d5378,#8f7bb5,#2f8f7f,#b9d7c4,#2f6b6a);--ui:'Schibsted Grotesk',system-ui,sans-serif;--lyric:'Hanken Grotesk','PingFang SC',sans-serif;--ease:cubic-bezier(.16,1,.3,1);} .ds-job{width:300px;} .ds-disc{width:112px;height:112px;border-radius:50%;background:radial-gradient(circle,var(--ink) 0 34px,var(--paper) 34px 36px,var(--ink) 36px 37.5px,transparent 37.5px),var(--abalone);box-shadow:0 0 0 3px var(--paper),0 0 0 4px var(--line),0 18px 34px -16px rgb(70 40 15 / .45);animation:ds-turn 9s linear infinite;} .ds-steps{list-style:none;padding:0;display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:26px;} .ds-steps li{height:6px;border-radius:3px;background:var(--line);} .ds-steps li.done{background:var(--teal);} .ds-steps li.now{background:var(--honey);animation:ds-breathe 1.6s var(--ease) infinite;} @keyframes ds-turn{to{rotate:1turn;}} @keyframes ds-breathe{50%{opacity:.45;}} @media (prefers-reduced-motion:reduce){.ds-disc,.ds-steps li{animation:none;}}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Spruce Top & Rosette",
+    "overview": "The sheet is a quiet spruce-and-cream room where only the sung line and its playing chord carry colour. Everything is built from the materials of an acoustic guitar: a cream spruce ground, paper surfaces, rosewood ink, honey from the top's finish, and an abalone rosette that rings the play control and the processing disc. It refuses the chord site's dense monospace grid and its wall of toolbars.\n\nOwner-pinned (2026-11-13): the Spruce Top & Rosette colours (cream ground, rosewood ink, honey for capo and loop, abalone teal for \"now\", abalone rosette ring), with the lightness of the Strum iOS app: small refined type, light pale lyrics with wide word gaps, borderless soft chord pills, and a floating player. Earlier, larger previews read as \"clunky, big, out of space\"; the system stays small and airy because of that. The owner also rejects a techy look (dark dashboard, neon), a busy look (panels competing with the sheet) and a plain look (generic web app with no guitar feel).\n\nDensity is low and the type is small: 13px UI, 11-11.5px labels, 16px light lyrics. Hierarchy comes from tone, not size. Upcoming lines sit pale; the current line darkens to ink; its playing chord alone turns teal.",
+    "keyCharacteristics": [
+      "Cream ground, paper surfaces, rosewood ink in four steps, warm 1px hairlines.",
+      "Two accents with fixed jobs: honey means capo and loop, abalone teal means \"now\".",
+      "The abalone rosette ring is the only decorative device; it marks play and processing.",
+      "Light, pale lyrics with wide word gaps; small borderless chord pills above words.",
+      "A floating rounded player at bottom centre; no toolbars."
+    ],
+    "rules": [
+      {
+        "name": "The Two Jobs Rule",
+        "body": "Honey means capo and loop; teal means \"now\". Never swap them, and never use either as decoration.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Coloured Chord Rule",
+        "body": "At most one chord on the sheet is teal at any moment: the one sounding now.",
+        "section": "colors"
+      },
+      {
+        "name": "The Small Type Rule",
+        "body": "Nothing but titles exceeds 17px. Hierarchy comes from weight and ink step, not size.",
+        "section": "typography"
+      },
+      {
+        "name": "The Pale Lyric Rule",
+        "body": "Lyrics are light weight and pale (`ink-4`), step to `ink-3` for the next line and to full `ink` at 400 for the current line. Chinese characters join without the word gap.",
+        "section": "typography"
+      },
+      {
+        "name": "The Only Things That Float Rule",
+        "body": "Only the player, the processing disc and the sounding chord carry a drop shadow.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** keep honey for capo and loop and teal for \"now\" (The Two Jobs Rule).",
+      "**Do** keep type small: 13px UI, 11-11.5px labels, 16px light lyrics, 26px titles.",
+      "**Do** draw hairlines as 1px `line` / `line-soft` and float only the player, disc and sounding chord.",
+      "**Do** use the abalone rosette only for play, the brand mark and processing.",
+      "**Do** draw icons as inline stroked SVG (1.4-1.8px strokes, round caps)."
+    ],
+    "donts": [
+      "**Don't** give chord pills borders or make them bigger: they stay borderless, 11px, 7px radius.",
+      "**Don't** add toolbars or panels around the sheet; controls live in the pill row and the floating player.",
+      "**Don't** go dark, neon or dashboard-like; don't add a monospace chord grid.",
+      "**Don't** copy the Strum app's logo, name styling or assets.",
+      "**Don't** invent logos, illustrations or photography; album art comes from the song source only."
+    ]
+  }
+}

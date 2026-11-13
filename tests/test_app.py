@@ -113,3 +113,24 @@ def test_post_right_after_done_is_not_409(monkeypatch):
         wait_done(r.json()["id"])
         assert client.post("/api/songs", json=SONG).status_code == 200  # lock already free
         time.sleep(0.02)
+
+
+def test_library_lists_finished_songs_newest_first(monkeypatch, tmp_path):
+    import json, os
+    monkeypatch.setattr(pipeline, "DATA", tmp_path)
+    for vid, t in (("old", 1), ("new", 2)):
+        (tmp_path / vid).mkdir()
+        (tmp_path / vid / "sheet.json").write_text(json.dumps({"video_id": vid, "title": vid.upper(), "artist": "A", "duration": 9, "rows": [1]}))
+        os.utime(tmp_path / vid / "sheet.json", (t, t))
+    (tmp_path / "tmpx").mkdir()  # a job still writing: folder name is not its video id
+    (tmp_path / "tmpx" / "sheet.json").write_text(json.dumps({"video_id": "zzz"}))
+    (tmp_path / "bad").mkdir()
+    (tmp_path / "bad" / "sheet.json").write_text("{")
+    songs = client.get("/api/library").json()
+    assert [s["video_id"] for s in songs] == ["new", "old"]
+    assert songs[0] == {"video_id": "new", "title": "NEW", "artist": "A", "duration": 9, "made": 2}
+
+
+def test_page_files_are_revalidated():
+    assert client.get("/").headers["cache-control"] == "no-cache"
+    assert client.get("/static/app.js").headers["cache-control"] == "no-cache"
