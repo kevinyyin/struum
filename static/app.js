@@ -68,14 +68,22 @@ export function renderSheet(sheet) {
         div.append(span);
       });
     }
-    div.addEventListener("click", () => { audio.currentTime = Number(div.dataset.start); });
+    const seek = () => { audio.currentTime = Number(div.dataset.start); };
+    div.tabIndex = 0;
+    div.setAttribute("role", "button");
+    div.addEventListener("click", seek);
+    div.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); seek(); }
+    });
     rowEls.push(div);
     box.append(div);
   }
 }
 
 function highlight(t) {
-  const row = rowEls.find((r) => t >= Number(r.dataset.start) && t < Number(r.dataset.end)) || null;
+  // Last row started so far: stays lit through gaps between lines.
+  let row = null;
+  for (const r of rowEls) if (Number(r.dataset.start) <= t) row = r;
   if (row !== activeRow) {
     activeRow?.classList.remove("now");
     row?.classList.add("now");
@@ -95,6 +103,11 @@ const setStatus = (s) => { $("status").textContent = s; };
 const setError = (s) => { $("error").textContent = s; };
 
 export async function startSong(body) {
+  $("go").querySelector("button").disabled = true; // a second submit would 409 and cancel this poll
+  try { await run(body); } finally { $("go").querySelector("button").disabled = false; }
+}
+
+async function run(body) {
   const me = ++pollId;
   setError("");
   setStatus("Starting...");
@@ -119,7 +132,9 @@ export async function startSong(body) {
   while (me === pollId) {
     let job;
     try {
-      job = await (await fetch(`/api/songs/${id}`)).json();
+      const r = await fetch(`/api/songs/${id}`);
+      if (!r.ok) throw new Error(r.status);
+      job = await r.json();
     } catch {
       setStatus("");
       return setError("Lost contact with the server.");
