@@ -153,6 +153,11 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
     <p class="by" id="sp-sub">Pick a song and Strum makes its chord sheet. A new song takes about a minute.</p>
     <p class="note" id="sp-msg" role="status"></p>
     <button type="button" class="pill honey big" id="sp-login" hidden>Log in with Spotify</button>
+    <form id="sp-search" class="paste newlist" role="search" hidden>
+      <label for="sp-q" class="sr">Search Spotify</label>
+      <input id="sp-q" type="search" placeholder="Search all of Spotify: a song or an artist" autocomplete="off" spellcheck="false">
+      <button type="submit">Search</button>
+    </form>
     <div class="tabs" role="tablist" id="sp-tabs" hidden></div>
     <ul class="list" id="sp-list"></ul>
   </section>

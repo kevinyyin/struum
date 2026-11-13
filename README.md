@@ -29,7 +29,7 @@ PATH=/opt/homebrew/bin:$PATH .venv/bin/uvicorn app:app --host 127.0.0.1 --port 8
 Open http://127.0.0.1:8000/ (use `127.0.0.1`, not `localhost`: Spotify only accepts the address you registered).
 
 - **Your songs** (sidebar and its own page) lists every saved sheet, newest first. A song that finished while you were elsewhere gets a teal dot until you open it.
-- **Spotify** has its own page (Recently played, Top tracks, Liked) and a quick list of three recent songs in the sidebar. Songs you already made say **Open sheet**; the rest say **Make sheet**.
+- **Spotify** has its own page (Recently played, Top tracks, Liked, plus a search box for any song on Spotify) and a quick list of three recent songs in the sidebar. Songs you already made say **Open sheet**; the rest say **Make sheet**.
 - Paste a YouTube link in the sidebar box for anything else.
 - One song is processed at a time; you can browse while it runs.
 - On a song: capo and transpose steppers, **Suggest capo**, chord diagrams and a suggested strum (tabs), and a floating player. The current line darkens and its chord turns teal.

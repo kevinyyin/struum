@@ -144,6 +144,8 @@ button.pill:hover { border-color: var(--ink-4); }
 .subhead { font-size: 13px; font-weight: 700; margin-top: 30px; }
 .paste.newlist { margin-top: 18px; height: 38px; max-width: 420px; }
 .paste.newlist input { font-size: 13px; }
+#sp-search { max-width: none; }
+#sp-search input::-webkit-search-cancel-button { cursor: pointer; }
 .item .tools { display: flex; gap: 2px; align-items: center; }
 .ico.small { width: 28px; height: 28px; }
 .ico:disabled { opacity: 0.3; }

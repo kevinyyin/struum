@@ -35,6 +35,7 @@ const msg = (s) => { $("sp-msg").textContent = s; };
 let clientId = "";
 let tabs = []; // [{name, tracks}]
 let tabIndex = 0;
+let found = null; // {query, tracks} while a search is showing, instead of a tab
 
 async function login() {
   const verifier = rand(), state = rand();
@@ -51,6 +52,8 @@ function showLogin(note = "") {
   msg(note);
   $("sp-login").hidden = false;
   $("sp-tabs").hidden = true;
+  $("sp-search").hidden = true;
+  found = null;
   $("sp-list").replaceChildren();
   $("sp-quick").replaceChildren();
   $("sp-all").hidden = true;
@@ -123,15 +126,17 @@ function action(t) {
 
 function drawList() {
   const list = $("sp-list");
-  list.replaceChildren(...(tabs[tabIndex]?.tracks ?? []).map((t) => {
+  const tracks = found ? found.tracks : tabs[tabIndex]?.tracks ?? [];
+  list.replaceChildren(...tracks.map((t) => {
     const li = el("li", "item");
     const b = action(t);
     li.append(art(t), text(t), b);
     li.onclick = () => { if (!b.disabled) pick(t); };
     return li;
   }));
-  if (tabs[tabIndex] && !tabs[tabIndex].tracks.length) list.append(el("li", "empty", `Nothing in ${tabs[tabIndex].name} yet.`));
-  [...$("sp-tabs").children].forEach((b, i) => b.setAttribute("aria-selected", String(i === tabIndex)));
+  if (found && !found.tracks.length) list.append(el("li", "empty", `No songs on Spotify match "${found.query}".`));
+  else if (!found && tabs[tabIndex] && !tabs[tabIndex].tracks.length) list.append(el("li", "empty", `Nothing in ${tabs[tabIndex].name} yet.`));
+  [...$("sp-tabs").children].forEach((b, i) => b.setAttribute("aria-selected", String(!found && i === tabIndex)));
 }
 
 function drawQuick() {
@@ -179,18 +184,50 @@ async function showLists() {
   }
   msg("");
   $("sp-login").hidden = true;
+  $("sp-search").hidden = false;
   const bar = $("sp-tabs");
   bar.hidden = false;
   bar.replaceChildren(...tabs.map((t, i) => {
     const b = el("button", "", t.name);
     b.type = "button";
     b.setAttribute("role", "tab");
-    b.onclick = () => { tabIndex = i; drawList(); };
+    b.onclick = () => { tabIndex = i; found = null; $("sp-q").value = ""; drawList(); };
     return b;
   }));
   drawList();
   drawQuick();
 }
+
+// Search all of Spotify as you type (a short pause first, and only the latest answer is shown).
+let searchTimer = 0, searchAbort = null;
+async function search(query) {
+  searchAbort?.abort();
+  if (!query) { found = null; drawList(); return; }
+  searchAbort = new AbortController();
+  let r;
+  try {
+    r = await fetch("https://api.spotify.com/v1/search?" + new URLSearchParams({q: query, type: "track", limit: "30"}),
+      {headers: {Authorization: `Bearer ${store.get("sp_token")}`}, signal: searchAbort.signal});
+  } catch (e) {
+    if (e.name !== "AbortError") msg("Could not reach Spotify. Check your connection.");
+    return;
+  }
+  if (r.status === 401) { store.del("sp_token"); return showLogin("Your Spotify login expired."); }
+  if (!r.ok) return msg("Spotify search didn't work just now. Try again in a moment.");
+  msg("");
+  found = {query, tracks: dedupe(((await r.json()).tracks?.items ?? []).filter((t) => t?.name))};
+  drawList();
+}
+$("sp-q").addEventListener("input", () => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => search($("sp-q").value.trim()), 350);
+});
+$("sp-search").addEventListener("submit", (e) => {
+  e.preventDefault();
+  clearTimeout(searchTimer);
+  search($("sp-q").value.trim());
+});
+$("sp-q").addEventListener("keydown", (e) => { if (e.key === "Escape") { $("sp-q").value = ""; search(""); } });
 
 window.addEventListener("library", () => { if (tabs.length) { drawList(); drawQuick(); } });
 window.addEventListener("busy", () => { if (tabs.length) drawList(); });
