@@ -239,7 +239,7 @@ components:
 
 **Creative North Star: "Spruce Top & Rosette"**
 
-The sheet is a quiet spruce-and-cream room where only the sung line and its playing chord carry colour. Everything is built from the materials of an acoustic guitar: a cream spruce ground, paper surfaces, rosewood ink, honey from the top's finish, and an abalone rosette that rings the play control, the processing disc, the tuner dial and the home-screen icon. It refuses the chord site's dense monospace grid and its wall of toolbars.
+The sheet is a quiet spruce-and-cream room where only the sung line and its playing chord carry colour. Everything is built from the materials of an acoustic guitar: a cream spruce ground, paper surfaces, rosewood ink, honey from the top's finish, and an abalone rosette that rings the play control, the processing disc and the tuner dial. The home-screen icon is a honey celluloid guitar pick. It refuses the chord site's dense monospace grid and its wall of toolbars.
 
 Owner-pinned (2026-11-13): the Spruce Top & Rosette colours (cream ground, rosewood ink, honey for capo and loop, abalone teal for "now", abalone rosette ring), with the lightness of the Strum iOS app: small refined type, light pale lyrics with wide word gaps, borderless soft chord pills, and a floating player. Earlier, larger previews read as "clunky, big, out of space"; the system stays small and airy because of that. The owner also rejects a techy look (dark dashboard, neon), a busy look (panels competing with the sheet) and a plain look (generic web app with no guitar feel).
 
@@ -264,7 +264,7 @@ A warm, low-chroma wood palette with two small accents that each mean one family
 - **Rosewood** (`rose`): text on honey surfaces and on the current line's chord pills; the current tab's icon on the phone tab bar.
 
 ### Tertiary
-- **Abalone** (conic gradient of teal, sea-green, slate blue, lilac, cream-green; in the sidecar): only inside the rosette ring around the play button, the brand mark, the passcode screen mark, the processing disc, the tuner dial and the app icon.
+- **Abalone** (conic gradient of teal, sea-green, slate blue, lilac, cream-green; in the sidecar): only inside the rosette ring around the play button, the brand mark, the passcode screen mark, the processing disc and the tuner dial.
 
 ### Neutral
 - **Cream Ground** (`ground`): page background, phone tab bar, edit-bar input field, manifest theme and background colour.
@@ -396,7 +396,7 @@ Songs: 44px art, 600 title, `ink-2` artist, a row action or small icon buttons a
 Paper, 54px, 17px radius, Float shadow; the rosette play button, current time (ink, 600), a segmented timeline (one segment per line: `line`, teal when done, honey when looped; grows on hover; drag to loop), end time, and a 32px loop icon button (honey tint when pressed).
 
 ### Rosette (signature)
-An ink centre, a thin paper ring and the abalone conic gradient: 17px brand mark, 38px play button (46px on touch), 44px passcode mark, 112px processing disc turning once per 9s, 168px tuner dial. With album art, the disc becomes a 14px-radius art square with a 40px turning rosette badge. The app icon is the same rosette, centred on cream with a paper ring and a soft drop (source `scripts/icon.html`).
+An ink centre, a thin paper ring and the abalone conic gradient: 17px brand mark, 38px play button (46px on touch), 44px passcode mark, 112px processing disc turning once per 9s, 168px tuner dial. With album art, the disc becomes a 14px-radius art square with a 40px turning rosette badge. The app icon (owner-chosen, 2026-11-13) is a honey celluloid guitar pick tilted -14°, with a faint pearl swirl, a diagonal gloss, a pale bevelled edge, a soft drop, and a pressed tone-on-tone rosette (two rings, no abalone), on cream (source `scripts/icon.html`).
 
 ### Tuner
 The 168px rosette dial holds the note in Numeral type; it sits at 55% opacity while idle and gains the teal Tuned ring when in tune. Below, a 46px paper meter (12px radius, inset hairline) with tick marks every 10%, a teal-tint centre band and a 2px teal centre line; the 4px ink needle slides with the cents and turns teal in tune. Six string chips (36 x 32px, 9px radius, 13px / 700): paper with inset hairline at rest, honey when that string is heard, teal when it is in tune. A big honey pill starts and stops.
@@ -416,7 +416,7 @@ Sticky at the top of the main area, max 620px: error-band fill, 1px error-ring, 
 - **Do** keep honey for capo, loop and the thing in hand, and teal for now, done and right (The Two Jobs Rule).
 - **Do** keep type small: 13px UI, 11-11.5px labels, 16px light lyrics, 26px titles (24px on phones); only the tuner note is large.
 - **Do** draw hairlines as 1px `line` / `line-soft` and float only the player or edit bar, the menu, the rosette discs and the sounding chord.
-- **Do** use the abalone rosette only for play, the brand mark, processing, the tuner dial and the app icon.
+- **Do** use the abalone rosette only for play, the brand mark, processing and the tuner dial.
 - **Do** draw icons as inline stroked SVG (1.4-1.8px strokes, round caps).
 - **Do** grow targets under `(pointer: coarse)` and keep phone text fields at 16px.
 
@@ -425,4 +425,4 @@ Sticky at the top of the main area, max 620px: error-band fill, 1px error-ring, 
 - **Don't** add toolbars or panels around the sheet; controls live in the pill row and one floating bar (player or edit bar, never both).
 - **Don't** go dark, neon or dashboard-like; don't add a monospace chord grid.
 - **Don't** copy the Strum app's logo, name styling or assets.
-- **Don't** invent logos, illustrations or photography; album art comes from the song source only, and the app icon is the rosette.
+- **Don't** invent logos, illustrations or photography; album art comes from the song source only, and the app icon is the honey pick.

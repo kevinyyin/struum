@@ -557,7 +557,7 @@
   ],
   "narrative": {
     "northStar": "Spruce Top & Rosette",
-    "overview": "**Creative North Star: \"Spruce Top & Rosette\"**\n\nThe sheet is a quiet spruce-and-cream room where only the sung line and its playing chord carry colour. Everything is built from the materials of an acoustic guitar: a cream spruce ground, paper surfaces, rosewood ink, honey from the top's finish, and an abalone rosette that rings the play control, the processing disc, the tuner dial and the home-screen icon. It refuses the chord site's dense monospace grid and its wall of toolbars.\n\nOwner-pinned (2026-11-13): the Spruce Top & Rosette colours (cream ground, rosewood ink, honey for capo and loop, abalone teal for \"now\", abalone rosette ring), with the lightness of the Strum iOS app: small refined type, light pale lyrics with wide word gaps, borderless soft chord pills, and a floating player. Earlier, larger previews read as \"clunky, big, out of space\"; the system stays small and airy because of that. The owner also rejects a techy look (dark dashboard, neon), a busy look (panels competing with the sheet) and a plain look (generic web app with no guitar feel).\n\nDensity is low and the type is small: 13px UI, 11-11.5px labels, 16px light lyrics. Hierarchy comes from tone, not size. Upcoming lines sit pale; the current line darkens to ink; its playing chord alone turns teal. Later surfaces (playlists, tuner, chord editing, Spotify search, the phone layout) reuse the same materials rather than adding new ones; the only size jump is the tuner's note, which is read from arm's length.",
+    "overview": "**Creative North Star: \"Spruce Top & Rosette\"**\n\nThe sheet is a quiet spruce-and-cream room where only the sung line and its playing chord carry colour. Everything is built from the materials of an acoustic guitar: a cream spruce ground, paper surfaces, rosewood ink, honey from the top's finish, and an abalone rosette that rings the play control, the processing disc and the tuner dial. The home-screen icon is a honey celluloid guitar pick. It refuses the chord site's dense monospace grid and its wall of toolbars.\n\nOwner-pinned (2026-11-13): the Spruce Top & Rosette colours (cream ground, rosewood ink, honey for capo and loop, abalone teal for \"now\", abalone rosette ring), with the lightness of the Strum iOS app: small refined type, light pale lyrics with wide word gaps, borderless soft chord pills, and a floating player. Earlier, larger previews read as \"clunky, big, out of space\"; the system stays small and airy because of that. The owner also rejects a techy look (dark dashboard, neon), a busy look (panels competing with the sheet) and a plain look (generic web app with no guitar feel).\n\nDensity is low and the type is small: 13px UI, 11-11.5px labels, 16px light lyrics. Hierarchy comes from tone, not size. Upcoming lines sit pale; the current line darkens to ink; its playing chord alone turns teal. Later surfaces (playlists, tuner, chord editing, Spotify search, the phone layout) reuse the same materials rather than adding new ones; the only size jump is the tuner's note, which is read from arm's length.",
     "keyCharacteristics": [
       "Cream ground, paper surfaces, rosewood ink in four steps, warm 1px hairlines.",
       "Two accents with fixed jobs: honey means capo, loop and the thing in hand; abalone teal means \"now\", done and right.",
@@ -596,7 +596,7 @@
       "**Do** keep honey for capo, loop and the thing in hand, and teal for now, done and right (The Two Jobs Rule).",
       "**Do** keep type small: 13px UI, 11-11.5px labels, 16px light lyrics, 26px titles (24px on phones); only the tuner note is large.",
       "**Do** draw hairlines as 1px `line` / `line-soft` and float only the player or edit bar, the menu, the rosette discs and the sounding chord.",
-      "**Do** use the abalone rosette only for play, the brand mark, processing, the tuner dial and the app icon.",
+      "**Do** use the abalone rosette only for play, the brand mark, processing and the tuner dial.",
       "**Do** draw icons as inline stroked SVG (1.4-1.8px strokes, round caps).",
       "**Do** grow targets under `(pointer: coarse)` and keep phone text fields at 16px."
     ],
@@ -605,7 +605,7 @@
       "**Don't** add toolbars or panels around the sheet; controls live in the pill row and one floating bar (player or edit bar, never both).",
       "**Don't** go dark, neon or dashboard-like; don't add a monospace chord grid.",
       "**Don't** copy the Strum app's logo, name styling or assets.",
-      "**Don't** invent logos, illustrations or photography; album art comes from the song source only, and the app icon is the rosette."
+      "**Don't** invent logos, illustrations or photography; album art comes from the song source only, and the app icon is the honey pick."
     ]
   }
 }
