@@ -34,6 +34,13 @@ fetch("/static/guitar.json").then((r) => r.json()).then((j) => { db = j; drawInf
 
 export const setError = (s) => { $("error").textContent = s; };
 
+// Local server: can_make true. Hosted copy (Vercel): false, and the library sits behind a passcode.
+export const config = fetch("/api/config").then((r) => r.json()).catch(() => ({}));
+let canMake = true;
+export const canMakeSongs = () => canMake;
+config.then((c) => { canMake = c.can_make !== false; document.body.classList.toggle("hosted", !canMake); });
+let locked = false;
+
 /* ---------- library ---------- */
 
 export let library = [];
@@ -102,15 +109,17 @@ function drawLibrary() {
 async function loadLibrary() {
   try {
     const r = await fetch("/api/library");
+    locked = r.status === 401;
     if (r.ok) library = await r.json();
   } catch { /* keep the last list */ }
+  document.body.classList.toggle("locked", locked);
   drawLibrary();
   window.dispatchEvent(new Event("library"));
 }
 
 /* ---------- views ---------- */
 
-const VIEWS = ["job", "song", "songs", "spotify"];
+const VIEWS = ["login", "job", "song", "songs", "spotify"];
 let view = "songs";
 
 function show(v) {
@@ -138,6 +147,7 @@ let keepError = false; // an error that sent us home must survive the hash chang
 
 async function route() {
   if (keepError) keepError = false; else setError("");
+  if (locked) return show("login");
   const [, name, id] = location.hash.split("/");
   if (name === "spotify") return show("spotify");
   if (name === "job") return job ? show("job") : (location.hash = "#/");
@@ -151,6 +161,7 @@ async function openSong(id) {
     if (!sheet) {
       try {
         const r = await fetch(`/data/${id}/sheet.json`);
+        if (r.status === 401) { locked = true; document.body.classList.add("locked"); return show("login"); }
         if (!r.ok) throw new Error(r.status);
         sheet = await r.json();
         sheets.set(id, sheet);
@@ -473,6 +484,7 @@ function drawJob() {
 }
 
 export async function startSong(body, label = {}) {
+  if (!canMake) return setError("New songs are made by the app on your Mac; they show up here after it syncs.");
   if (job) return setError("One song at a time: wait for the current one to finish.");
   job = {title: label.title || "Making your sheet", by: label.by || "", art: /^https:\/\/[\w.-]+\.scdn\.co\/[^"'()\\\s]*$/.test(label.art || "") ? label.art : "",
     step: 0, steps: 5, name: "Starting"};
@@ -533,6 +545,21 @@ $("go").addEventListener("submit", (e) => {
   const url = $("url").value.trim();
   $("url").value = "";
   startSong({url}, {title: "Making your sheet", by: url});
+});
+
+$("login").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  setError("");
+  let r;
+  try {
+    r = await fetch("/api/login", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({passcode: $("passcode").value})});
+  } catch {
+    return setError("Could not reach the server.");
+  }
+  if (!r.ok) return setError((await r.json().catch(() => ({}))).error || "Could not log in.");
+  $("passcode").value = "";
+  await loadLibrary();
+  route();
 });
 
 window.addEventListener("hashchange", route);

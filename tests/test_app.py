@@ -96,9 +96,9 @@ def test_unknown_job():
 
 def test_config(monkeypatch):
     monkeypatch.setenv("SPOTIFY_CLIENT_ID", "xyz")
-    assert client.get("/api/config").json() == {"spotify_client_id": "xyz"}
+    assert client.get("/api/config").json() == {"spotify_client_id": "xyz", "can_make": True}
     monkeypatch.delenv("SPOTIFY_CLIENT_ID")
-    assert client.get("/api/config").json() == {"spotify_client_id": ""}
+    assert client.get("/api/config").json() == {"spotify_client_id": "", "can_make": True}
 
 
 def test_index():
@@ -134,3 +134,20 @@ def test_library_lists_finished_songs_newest_first(monkeypatch, tmp_path):
 def test_page_files_are_revalidated():
     assert client.get("/").headers["cache-control"] == "no-cache"
     assert client.get("/static/app.js").headers["cache-control"] == "no-cache"
+
+
+def test_finished_song_syncs_only_with_a_blob_token(monkeypatch):
+    calls = []
+    monkeypatch.setattr(app_module.subprocess, "Popen", lambda args, **kw: calls.append(args))
+    monkeypatch.delenv("BLOB_READ_WRITE_TOKEN", raising=False)
+    wait_done(start(monkeypatch, lambda request, progress: {"video_id": "abcdefghijk", "rows": []}))
+    assert calls == []
+    monkeypatch.setenv("BLOB_READ_WRITE_TOKEN", "x")
+    wait_done(start(monkeypatch, lambda request, progress: {"video_id": "abcdefghijk", "rows": []}))
+    for _ in range(100):
+        if calls:
+            break
+        time.sleep(0.01)
+    assert calls and calls[0][-2:] == [str(app_module.ROOT / "scripts" / "sync.mjs"), "abcdefghijk"]
+    wait_done(start(monkeypatch, lambda request, progress: (_ for _ in ()).throw(pipeline.PipelineError("no"))))
+    assert len(calls) == 1  # a failed job uploads nothing

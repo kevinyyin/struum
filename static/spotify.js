@@ -1,4 +1,4 @@
-import {startSong, findSong, isBusy} from "/static/app.js";
+import {startSong, findSong, isBusy, config, canMakeSongs} from "/static/app.js";
 
 const REDIRECT = location.origin + "/"; // must match a redirect URI registered on the Spotify app
 const SCOPE = "user-read-recently-played user-top-read user-library-read";
@@ -107,8 +107,8 @@ function action(t) {
   const made = findSong(t.name, t.artists?.[0]?.name ?? "");
   const b = el("button", made ? "act open" : "act", made ? "Open sheet" : "Make sheet");
   b.type = "button";
-  b.disabled = !made && isBusy();
-  if (b.disabled) b.title = "One song at a time";
+  b.disabled = !made && (isBusy() || !canMakeSongs());
+  if (b.disabled) b.title = canMakeSongs() ? "One song at a time" : "Make new songs with the app on your Mac";
   b.onclick = (e) => { e.stopPropagation(); pick(t); };
   return b;
 }
@@ -134,7 +134,7 @@ function drawQuick() {
     b.type = "button";
     b.append(art(t), text(t));
     b.title = findSong(t.name, t.artists?.[0]?.name ?? "") ? "Open sheet" : "Make sheet";
-    b.onclick = () => { if (findSong(t.name, t.artists?.[0]?.name ?? "") || !isBusy()) pick(t); };
+    b.onclick = () => { if (findSong(t.name, t.artists?.[0]?.name ?? "") || (!isBusy() && canMakeSongs())) pick(t); };
     li.append(b);
     return li;
   }));
@@ -188,7 +188,9 @@ window.addEventListener("library", () => { if (tabs.length) { drawList(); drawQu
 window.addEventListener("busy", () => { if (tabs.length) drawList(); });
 
 async function init() {
-  try { clientId = (await (await fetch("/api/config")).json()).spotify_client_id || ""; } catch {}
+  const cfg = await config;
+  clientId = cfg.spotify_client_id || "";
+  if (cfg.can_make === false) $("sp-sub").textContent = "Songs you have made open here. Make new ones with the app on your Mac; they appear after it syncs.";
   if (!clientId) {
     msg("Spotify needs a client ID in .env. See README.md for the two-minute setup.");
     $("sp-side-msg").textContent = "Add a Spotify client ID to .env to see your songs here.";

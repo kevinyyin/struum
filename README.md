@@ -39,6 +39,7 @@ Open http://127.0.0.1:8000/ (use `127.0.0.1`, not `localhost`: Spotify only acce
 
 ```
 .venv/bin/pytest -q
+npm install
 node --test tests/*.mjs
 ```
 
@@ -52,6 +53,18 @@ node --test tests/*.mjs
 4. Log in from the page. The account owner needs Premium for the app to work.
 
 The Liked tab hides itself if Spotify refuses it. A picked song is matched to a YouTube video by artist, title and duration. The login lasts for the browser tab (about an hour); after that the page asks you to log in again.
+
+## Hosted copy (Vercel)
+
+The Vercel project `struum` serves the page and your saved songs so you can open them anywhere, even with the Mac off. Making new songs still happens on the Mac: the models are too big for Vercel and YouTube blocks its servers.
+
+- Vercel gets only `static/`, `api/`, `vercel.json` and `package.json` (see `.vercelignore`). The Python pipeline, `data/` and `.env` never leave the Mac.
+- Songs live in a **private** Vercel Blob store (`struum-songs`): `songs/<youtube id>/…` plus `library.json`. Audio streams through short-lived signed links, so seeking works.
+- Everything with your songs is behind a passcode (`STRUM_PASSCODE`, kept in `.env` and in the project's environment variables). The browser remembers it for 30 days. Change it with `vercel env add STRUM_PASSCODE production --force`, then redeploy; that logs every browser out.
+- With `BLOB_READ_WRITE_TOKEN` in `.env`, the local server uploads each new song when it finishes. To upload by hand: `node --env-file=.env scripts/sync.mjs` (missing songs) or `… sync.mjs <youtube id>` (re-upload one).
+- On the hosted page there is no link box and **Make sheet** is disabled; songs you have made say **Open sheet**.
+- For Spotify on the hosted page, add its address (`https://<your-domain>/`) as a second redirect URI in the Spotify app.
+- Pushing to `main` on GitHub deploys to production.
 
 ## What you get
 

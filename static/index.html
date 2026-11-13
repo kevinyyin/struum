@@ -44,6 +44,17 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
 <main id="main">
   <p id="error" class="error" role="alert"></p>
 
+  <section id="view-login" class="col" hidden>
+    <span class="ring big" aria-hidden="true"></span>
+    <h1>Strum</h1>
+    <p class="by">Enter your passcode to open your library.</p>
+    <form id="login" class="paste login">
+      <label for="passcode" class="sr">Passcode</label>
+      <input id="passcode" type="password" placeholder="Passcode" required autocomplete="current-password">
+      <button type="submit">Open</button>
+    </form>
+  </section>
+
   <section id="view-job" class="col" hidden aria-live="polite">
     <div class="disc" id="job-art" aria-hidden="true"></div>
     <h1 id="job-title">Making your sheet</h1>
@@ -83,7 +94,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
 
   <section id="view-spotify" class="col" hidden>
     <h1>Spotify</h1>
-    <p class="by">Pick a song and Strum makes its chord sheet. A new song takes about a minute.</p>
+    <p class="by" id="sp-sub">Pick a song and Strum makes its chord sheet. A new song takes about a minute.</p>
     <p class="note" id="sp-msg" role="status"></p>
     <button type="button" class="pill honey big" id="sp-login" hidden>Log in with Spotify</button>
     <div class="tabs" role="tablist" id="sp-tabs" hidden></div>

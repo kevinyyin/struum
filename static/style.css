@@ -138,6 +138,17 @@ button.pill:hover { border-color: var(--ink-4); }
 .item:hover .act:not(.open) { background: var(--honey-tint); border-color: var(--honey-line); color: var(--rose); }
 .empty { margin-top: 22px; color: var(--ink-2); max-width: 46ch; }
 
+/* passcode (hosted copy only) */
+body.locked { grid-template-columns: 1fr; }
+body.locked .side { display: none; }
+#view-login { max-width: 380px; padding-top: 18vh; }
+.ring.big { display: block; width: 44px; height: 44px; margin-bottom: 18px; background: radial-gradient(circle, var(--ink) 0 10px, var(--paper) 10px 12px, transparent 12px), var(--abalone); }
+.paste.login { margin-top: 18px; height: 40px; }
+.paste.login input { font-size: 14px; }
+.paste.login button { font-size: 12.5px; padding: 7px 12px; }
+/* hosted copy: songs are made on the Mac, so there is no link box */
+body.hosted #go { display: none; }
+
 /* processing: a rosette turns while the steps advance in place */
 #view-job { padding-top: 70px; }
 .disc { width: 112px; height: 112px; border-radius: 50%; margin-bottom: 26px; position: relative;

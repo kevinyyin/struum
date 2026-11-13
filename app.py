@@ -1,6 +1,8 @@
 import json
 import logging
 import os
+import shutil
+import subprocess
 import threading
 from pathlib import Path
 from uuid import uuid4
@@ -12,7 +14,8 @@ from pydantic import BaseModel, ConfigDict
 
 import pipeline
 
-STATIC = Path(__file__).parent / "static"
+ROOT = Path(__file__).parent
+STATIC = ROOT / "static"
 log = logging.getLogger("uvicorn.error")
 app = FastAPI()
 jobs: dict[str, dict] = {}
@@ -29,6 +32,20 @@ class ByTitle(BaseModel):
     artist: str
     title: str
     duration: float
+
+
+def sync(video_id: str) -> None:
+    """Upload a finished song to the hosted copy's Blob store, when one is set up (see README)."""
+    if not os.environ.get("BLOB_READ_WRITE_TOKEN"):
+        return
+    node = shutil.which("node")
+    if not node:
+        log.warning("sync skipped: node not found on PATH")
+        return
+    try:
+        subprocess.Popen([node, str(ROOT / "scripts" / "sync.mjs"), video_id], cwd=ROOT)
+    except OSError:
+        log.exception("sync could not start")
 
 
 def work(job: dict, request: dict) -> None:
@@ -49,6 +66,8 @@ def work(job: dict, request: dict) -> None:
     busy.release()
     job["sheet"], job["error"] = sheet, error
     job["status"] = "error" if error else "done"
+    if isinstance(sheet, dict) and sheet.get("video_id"):  # after publishing: an upload can never hold up the job
+        sync(sheet["video_id"])
 
 
 @app.middleware("http")
@@ -62,7 +81,7 @@ async def revalidate(request, call_next):
 
 @app.get("/api/config")
 def config():
-    return {"spotify_client_id": os.environ.get("SPOTIFY_CLIENT_ID", "")}
+    return {"spotify_client_id": os.environ.get("SPOTIFY_CLIENT_ID", ""), "can_make": True}
 
 
 @app.post("/api/songs")

@@ -1,0 +1,19 @@
+# Vercel serves only the page (static/) and the small functions in api/.
+# The Python pipeline, songs and secrets stay on the Mac.
+/app.py
+/pipeline.py
+/sheet.py
+/requirements.txt
+/requirements.lock
+/pytest.ini
+/scripts
+/tests
+/docs
+/data
+/.venv
+/.venv-chords
+/.env*
+/.impeccable
+/.claude
+/.superpowers
+/*.md
