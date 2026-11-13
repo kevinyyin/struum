@@ -128,6 +128,9 @@ def test_library_lists_finished_songs_newest_first(monkeypatch, tmp_path):
     (tmp_path / "bad" / "sheet.json").write_text("{")
     songs = client.get("/api/library").json()
     assert [s["video_id"] for s in songs] == ["new", "old"]
+    # a recorded "made" wins over the file time, so rewriting a sheet does not reorder the library
+    (tmp_path / "old" / "sheet.json").write_text(json.dumps({"video_id": "old", "title": "OLD", "made": 99}))
+    assert [s["video_id"] for s in client.get("/api/library").json()] == ["old", "new"]
     assert songs[0] == {"video_id": "new", "title": "NEW", "artist": "A", "duration": 9, "made": 2}
 
 

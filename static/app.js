@@ -328,7 +328,7 @@ export function renderSheet(sheet) {
     div.setAttribute("role", "button");
     div.addEventListener("click", (e) => rowAction(i, e.shiftKey));
     div.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); rowAction(i, e.shiftKey); }
+      if (e.key === "Enter") { e.preventDefault(); rowAction(i, e.shiftKey); } // Space stays play/pause
     });
     rowEls.push(div);
     box.append(div);
@@ -394,7 +394,24 @@ $("loop").onclick = () => {
 };
 
 $("play").onclick = () => (audio.paused ? audio.play() : audio.pause());
-audio.addEventListener("play", () => { $("play").classList.add("on"); $("play").setAttribute("aria-label", "Pause"); tick(); });
+let ticking = false;
+audio.addEventListener("play", () => {
+  $("play").classList.add("on");
+  $("play").setAttribute("aria-label", "Pause");
+  if (!ticking) { ticking = true; tick(); }
+});
+// 2. a loop that runs to the end of the song starts over instead of stopping
+audio.addEventListener("ended", () => { if (loop) { audio.currentTime = rowStart(loop.from); audio.play(); } });
+// 6. hosted audio is a signed link that expires: on an error, fetch a fresh one once and resume
+let audioRetry = 0;
+audio.addEventListener("error", () => {
+  if (!current.sheet || Date.now() - audioRetry < 30000) return;
+  audioRetry = Date.now();
+  const t = audio.currentTime, playing = !audio.paused || $("play").classList.contains("on");
+  audio.src = `/data/${current.sheet.video_id}/audio.mp3?fresh=${audioRetry}`;
+  audio.currentTime = t;
+  if (playing) audio.play().catch(() => {});
+});
 audio.addEventListener("pause", () => { $("play").classList.remove("on"); $("play").setAttribute("aria-label", "Play"); });
 audio.addEventListener("loadedmetadata", buildTrack);
 audio.addEventListener("seeked", () => highlight(audio.currentTime));
@@ -402,7 +419,7 @@ audio.addEventListener("seeked", () => highlight(audio.currentTime));
 function tick() {
   if (loop && audio.currentTime >= rowEnd(loop.to) - 0.04) audio.currentTime = rowStart(loop.from);
   highlight(audio.currentTime);
-  if (!audio.paused) requestAnimationFrame(tick);
+  if (audio.paused) ticking = false; else requestAnimationFrame(tick);
 }
 
 function highlight(t) {
@@ -456,7 +473,7 @@ function highlight(t) {
 // Hands are on the guitar: Space plays or pauses, L loops, from anywhere that is not a control.
 document.addEventListener("keydown", (e) => {
   if (!current.sheet || e.metaKey || e.ctrlKey || e.altKey) return;
-  if (e.target.closest("input, textarea, button, a, [role=button], [role=slider], [role=tab]")) return;
+  if (e.target.closest("input, textarea, button, a, [role=slider], [role=tab]")) return; // lyric rows don't block them
   if (e.key === " ") { e.preventDefault(); $("play").click(); }
   if (e.key === "l" || e.key === "L") $("loop").click();
 });

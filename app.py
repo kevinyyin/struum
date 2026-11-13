@@ -118,7 +118,8 @@ def library():
             continue
         if f.parent.name != s.get("video_id"):  # a job's temp folder, not a finished song
             continue
-        songs.append({k: s.get(k) for k in ("video_id", "title", "artist", "duration")} | {"made": f.stat().st_mtime})
+        made = s.get("made") or f.stat().st_mtime  # older sheets have no "made": use the file time
+        songs.append({k: s.get(k) for k in ("video_id", "title", "artist", "duration")} | {"made": made})
     return sorted(songs, key=lambda s: -s["made"])
 
 
