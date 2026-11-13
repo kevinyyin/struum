@@ -12,6 +12,7 @@ WATCH = "https://www.youtube.com/watch?v="
 # large-v3-turbo: near large-v3 accuracy on Mandarin, and int8 on CPU runs at about medium's speed.
 WHISPER_MODEL = "large-v3-turbo"
 WORD = re.compile(r"[㐀-鿿豈-﫿]|[^\s㐀-鿿豈-﫿]+")  # each CJK character is a word
+LRC_HEADER = re.compile(r"^[^:：]{1,10}[:：]| - ")  # "词：周杰伦", "周杰伦 - 晴天"
 
 
 class PipelineError(Exception):
@@ -45,9 +46,24 @@ def parse_lrc(text: str) -> list[dict]:
     lines = []
     for line in text.splitlines():
         m = re.match(r"\[(\d+):(\d+(?:\.\d+)?)\](.*)", line)
-        if m and m[3].strip():
+        # Title and credit lines before the first lyric would soak up the intro's chords.
+        if m and m[3].strip() and (lines or not LRC_HEADER.search(m[3].strip())):
             lines.append({"start": int(m[1]) * 60 + float(m[2]), "text": m[3].strip()})
     return lines
+
+
+def join_letters(words: list[dict], text: str) -> list[dict]:
+    """zh alignment returns one word per non-space character; regroup them into WORD tokens of text."""
+    tokens = WORD.findall(text)
+    if "".join(w["text"] for w in words) != "".join(tokens):
+        return words
+    out, i = [], 0
+    for t in tokens:
+        part, i = words[i:i + len(t)], i + len(t)
+        starts = [w["start"] for w in part if w.get("start") is not None]
+        ends = [w["end"] for w in part if w.get("end") is not None]
+        out.append({"text": t, "start": starts[0] if starts else None, "end": ends[-1] if ends else None})
+    return out
 
 
 def fill_word_times(words: list[dict], start: float, end: float) -> list[dict]:
@@ -140,11 +156,11 @@ def fetch_lyrics(artist: str, title: str, duration: float) -> list[dict] | None:
                           headers={"User-Agent": "chord-sheet-app"}) as client:
             r = client.get("/get", params={"artist_name": artist, "track_name": title,
                                            "duration": round(duration)})
-            if r.status_code in (400, 404):  # 400: empty artist, from a pasted link without music metadata
+            # 400: empty artist, from a pasted link without music metadata
+            hit = None if r.status_code in (400, 404) else r.raise_for_status().json()
+            if not ok(hit):  # also unsynced or wrong-length records: search is the second try
                 hits = client.get("/search", params={"q": f"{artist} {title}".strip()}).raise_for_status().json()
                 hit = next((h for h in hits if ok(h)), None)
-            else:
-                hit = r.raise_for_status().json()
     except (httpx.HTTPError, ValueError):
         return None
     if not ok(hit):
@@ -165,6 +181,10 @@ def word_times(vocals: Path, lines: list[dict] | None) -> tuple[list[dict], str]
     s = max(range(0, max(len(audio) - n, 0) + 1, 5 * SAMPLE_RATE),
             key=lambda i: float((audio[i:i + n] ** 2).sum()))
     language = whisper.detect_language(audio[s:s + n])
+    text = "".join(l["text"] for l in lines or [])
+    # The lyrics' script beats detection (a Mandarin song's loudest 30 s can be English). Kana means Japanese.
+    if language != "yue" and re.search(r"[一-鿿]", text) and not re.search(r"[぀-ヿ]", text):
+        language = "zh"
     if lines is None:
         segments = whisper.transcribe(audio, language=language)["segments"]
     else:
@@ -180,11 +200,13 @@ def word_times(vocals: Path, lines: list[dict] | None) -> tuple[list[dict], str]
         try:
             segments = whisperx.align(segments, model, meta, audio, "cpu",
                                       return_char_alignments=False)["segments"]
-        except Exception:  # align rejected the hand-made segments: interpolate within each line instead
-            pass
+        except Exception as e:  # align rejected the hand-made segments: interpolate within each line instead
+            print(f"alignment failed, interpolating word times: {e!r:.200}", file=sys.stderr)
     out = []
     for seg in segments:
         words = [{"text": w["word"], "start": w.get("start"), "end": w.get("end")} for w in seg.get("words", [])]
+        if language == "zh":
+            words = join_letters(words, seg["text"])
         words = fill_word_times(words or [{"text": t} for t in WORD.findall(seg["text"])],
                                 float(seg["start"]), float(seg["end"]))
         if words:

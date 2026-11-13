@@ -55,3 +55,35 @@ def test_run_rejects_long_video(monkeypatch, tmp_path):
     with pytest.raises(pipeline.PipelineError, match="15 minutes"):
         pipeline.run({"url": "https://youtu.be/QDYfEBY9NM4"}, lambda i, s: None)
     assert not (pipeline.DATA / "QDYfEBY9NM4").exists()
+
+def test_parse_lrc_drops_leading_title_and_credit_lines():
+    text = ("[00:00.18]周杰伦 - 晴天\n[00:01.52]词：周杰伦\n[00:02.64]曲：周杰伦\n"
+            "[00:29.39]故事的小黄花\n[00:32.64]从出生那年就飘着\n[01:00.00]他说：再见\n[01:05.00]A - B\n")
+    assert [l["text"] for l in pipeline.parse_lrc(text)] == [
+        "故事的小黄花", "从出生那年就飘着", "他说：再见", "A - B"]   # later lines are untouched
+
+def test_join_letters_regroups_latin_in_zh_alignment():
+    text = "我爱 you，ReSo 宝贝"
+    chars = [c for c in text if c != " "]
+    words = [{"text": c, "start": float(i), "end": i + 0.5} for i, c in enumerate(chars)]
+    words[2]["start"] = None                                        # "y" not aligned: take the next start
+    out = pipeline.join_letters(words, text)
+    assert [w["text"] for w in out] == ["我", "爱", "you，ReSo", "宝", "贝"]
+    assert (out[2]["start"], out[2]["end"]) == (3.0, 9.5)
+    assert pipeline.join_letters(words[:-1], text) == words[:-1]    # counts differ: unchanged
+
+def test_fetch_lyrics_searches_when_get_is_unsynced_or_wrong_length(monkeypatch):
+    import httpx
+    lrc = "[00:01.00]hello"
+    seen = []
+
+    def handler(req):
+        seen.append((req.url.path, req.headers["user-agent"]))
+        if req.url.path == "/api/get":
+            return httpx.Response(200, json={"duration": 200, "syncedLyrics": None})
+        return httpx.Response(200, json=[{"duration": 300, "syncedLyrics": lrc},
+                                         {"duration": 205, "syncedLyrics": lrc}])
+    real = httpx.Client
+    monkeypatch.setattr(httpx, "Client", lambda **kw: real(transport=httpx.MockTransport(handler), **kw))
+    assert pipeline.fetch_lyrics("A", "T", 200.0) == [{"start": 1.0, "text": "hello"}]
+    assert seen == [("/api/get", "chord-sheet-app"), ("/api/search", "chord-sheet-app")]
