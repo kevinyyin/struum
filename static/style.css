@@ -214,7 +214,6 @@ body.editing-chords main::after { display: none; }
 .editing-chords #sheet .chord.changed { box-shadow: inset 0 0 0 1.5px var(--honey); background: var(--honey-tint); color: var(--rose); }
 .editing-chords #sheet .chord.sel { background: var(--teal); color: var(--paper); box-shadow: none; }
 .chord.add { border: 0; font: 600 12px/1 var(--ui); padding: 5px 8px; border-radius: 7px; background: transparent; color: var(--ink-3); outline: 1px dashed var(--ink-4); outline-offset: -1px; cursor: pointer; }
-@media (max-width: 760px) { .editbar { left: 50%; width: calc(100vw - 20px); bottom: 10px; } }
 
 /* passcode (hosted copy only) */
 body.locked { grid-template-columns: 1fr; }
@@ -268,19 +267,59 @@ body:not(.playing-view) main::after { display: none; }
 .ico[aria-pressed="true"] { background: var(--honey-tint); color: var(--rose); }
 
 /* narrow screens: sidebar becomes a top bar, library lives on its own page */
+/* phones: the sidebar becomes a bottom tab bar; the library, playlists and Spotify live on their own pages */
 @media (max-width: 760px) {
-  body { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
-  .side { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 12px 14px; border-right: 0; border-bottom: 1px solid var(--line); overflow: visible; }
-  .nav { display: flex; gap: 2px; }
-  .paste { flex: 1 1 100%; }
-  .side-group { display: none; }
-  .col { padding: 22px 18px 140px; }
+  :root { --tabbar: calc(58px + env(safe-area-inset-bottom)); }
+  body { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+  .side { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; display: block; padding: 4px 8px env(safe-area-inset-bottom);
+    background: var(--ground); border: 0; border-top: 1px solid var(--line); overflow: visible; }
+  .side .mark, .side #go, .side-group { display: none; }
+  .nav { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; }
+  .nav a { flex-direction: column; justify-content: center; gap: 3px; min-height: 52px; padding: 4px 0; font-size: 11px; font-weight: 600; color: var(--ink-2); }
+  .nav a svg { width: 21px; height: 21px; }
+  .nav a:hover { background: none; }
+  .nav a[aria-current="page"] { background: none; box-shadow: none; color: var(--ink); }
+  .nav a[aria-current="page"] svg { color: var(--rose); }
+  .col { padding: calc(18px + env(safe-area-inset-top)) 18px calc(var(--tabbar) + 110px); }
+  #view-login { padding-top: calc(14vh + env(safe-area-inset-top)); }
+  h1 { font-size: 24px; }
   .shapes { margin-inline: -18px; padding-inline: 18px; }
-  .pills { position: relative; }
-  .addpl { position: static; } /* the menu spans the controls row instead of running off the screen */
-  .menu { left: 0; right: 0; min-width: 0; }
-  .player { left: 50%; width: calc(100vw - 20px); bottom: 10px; }
-  main::after { left: 0; }
+  /* song controls: one row that scrolls sideways instead of three rows of pills */
+  .pills { flex-wrap: nowrap; overflow-x: auto; margin-inline: -18px; padding: 2px 18px 6px; scrollbar-width: none; }
+  .pills::-webkit-scrollbar { display: none; }
+  .pills > * { flex: none; }
+  /* Add to playlist opens as a bottom sheet (a dropdown would be cut off by the scrolling row) */
+  .menu { position: fixed; top: auto; left: 10px; right: 10px; bottom: calc(var(--tabbar) + 10px); min-width: 0; padding: 10px; z-index: 6; }
+  .menu .opt { padding: 12px 10px; font-size: 15px; }
+  .player, .editbar { left: 50%; width: calc(100vw - 20px); bottom: calc(var(--tabbar) + 8px); }
+  main::after { left: 0; bottom: var(--tabbar); }
+  /* iPhone zooms into any text field under 16px */
+  .paste input, #sp-q, #eb-name, #pl-new-name, #pl-rename-name, #passcode, .menu input { font-size: 16px; }
+  .paste { height: 42px; }
+  .paste button { font-size: 13px; padding: 7px 11px; }
+  .row { padding-block: 6px; }
+}
+/* touch screens: targets big enough for a thumb, whatever the screen width */
+@media (pointer: coarse) {
+  .pill { height: 36px; padding: 0 13px; font-size: 13px; }
+  .pill.big { height: 42px; }
+  .stepper { padding-right: 5px; }
+  .stepper button { width: 30px; height: 30px; border-radius: 8px; }
+  .stepper svg { width: 11px; height: 11px; }
+  .act { height: 36px; padding: 0 14px; font-size: 13px; }
+  .tabs { gap: 22px; }
+  .tabs button { padding: 8px 0 10px; font-size: 14px; }
+  .track { height: 36px; }
+  .ico { width: 42px; height: 42px; }
+  .play { width: 46px; height: 46px; background: radial-gradient(circle, var(--ink) 0 18px, var(--paper) 18px 19px, transparent 19px), var(--abalone); }
+  .player { height: 62px; }
+  .item { padding-block: 10px; }
+  .editing-chords #sheet .chord { padding: 12px 13px; font-size: 14px; min-width: 40px; text-align: center; }
+  .editing-chords #sheet .c { height: 46px; }
+  .editing-chords #sheet .row.inst { gap: 8px; }
+  .chord.add { padding: 12px 15px; font-size: 14px; }
+  .eb-chips button { padding: 10px 12px; font-size: 13px; }
+  .strings li { width: 44px; height: 40px; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }

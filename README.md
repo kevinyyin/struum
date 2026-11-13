@@ -70,6 +70,10 @@ The Vercel project `struum` serves the page and your saved songs so you can open
 - For Spotify on the hosted page, add its address (`https://<your-domain>/`) as a second redirect URI in the Spotify app.
 - Pushing to `main` deploys to production. To deploy without pushing: `npx vercel deploy --prod` (the project is linked in `.vercel/`).
 
+## On your phone
+
+Open https://struum.vercel.app in Safari, tap Share, then **Add to Home Screen**. It opens full screen with a bottom tab bar (Your songs, Playlists, Tuner, Spotify). The home-screen app keeps its own login, so enter the passcode (and log in to Spotify) once inside it. The icon is rendered from `scripts/icon.html` into `static/icons/`.
+
 ## What you get
 
 Each song is saved in `data/<youtube id>/` as `sheet.json`, `sheet.txt`, `sheet.html` (plus the audio). Processing the same video again returns the saved sheet. `data/` is git-ignored and safe to delete.

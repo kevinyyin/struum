@@ -1,0 +1,10 @@
+<!doctype html>
+<!-- Source of Strum's app icon (static/icons/*.png): the abalone rosette from the play button on the page's cream.
+     Render: Chrome headless --window-size=1024,1024 --screenshot, then sips -z for each size (see README). -->
+<html><head><meta charset="utf-8"><style>
+  html, body { margin: 0; width: 100vw; height: 100vh; background: #f6efe3; display: grid; place-items: center; }
+  .rosette { width: 58vmin; height: 58vmin; border-radius: 50%;
+    background: radial-gradient(circle, #2a1c13 0 15.5vmin, #fbf8f2 15.5vmin 17vmin, transparent 17vmin),
+                conic-gradient(from 30deg, #2f6b6a, #77b5a9, #3d5378, #8f7bb5, #2f8f7f, #b9d7c4, #2f6b6a);
+    box-shadow: 0 0 0 1.6vmin #fbf8f2, 0 0 0 2vmin #e6dac6, 0 3vmin 6vmin -2vmin rgb(70 40 15 / 0.35); }
+</style></head><body><div class="rosette"></div></body></html>
