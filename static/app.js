@@ -51,12 +51,8 @@ function drawInfo() {
   info.append(lab, row);
 }
 
-// Whole semitones within -6..6; written back so the input never shows a rejected value.
-const transposeValue = () => {
-  const t = Math.max(-6, Math.min(6, Math.round(Number($("transpose").value) || 0)));
-  $("transpose").value = t;
-  return t;
-};
+// Whole semitones within -6..6. Not written back on input: typing "-" reads as empty.
+const transposeValue = () => Math.max(-6, Math.min(6, Math.round(Number($("transpose").value) || 0)));
 
 function refresh() {
   current.shift = transposeValue() - Number($("capo").value);
@@ -73,6 +69,7 @@ function resetControls() {
 }
 
 $("transpose").addEventListener("input", refresh);
+$("transpose").addEventListener("change", () => { $("transpose").value = transposeValue(); });
 $("capo").addEventListener("input", refresh);
 $("reset").addEventListener("click", resetControls);
 $("suggest").addEventListener("click", () => {
