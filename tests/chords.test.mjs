@@ -15,7 +15,13 @@ test("transpose", () => {
 test("prefersFlats", () => {
   assert.equal(prefersFlats(["Bb", "F", "Gm"]), true);
   assert.equal(prefersFlats(["E", "F#m", "A"]), false);
-  assert.equal(prefersFlats(["C", "G", "Am", "F"]), true); // F alone implies flats (Capo 2 -> Bb F Gm Eb)
+});
+test("spelling follows the displayed key", () => {
+  const song = ["C", "G", "Am", "F"];
+  const shown = (shift) => song.map((n) => transpose(n, shift, prefersFlats(song.map((x) => transpose(x, shift, false))))).join(" ");
+  assert.equal(shown(-2), "Bb F Gm Eb");
+  assert.equal(shown(-3), "A E F#m D");
+  assert.equal(shown(0), "C G Am F");
 });
 test("suggestCapo picks the fret with most open shapes", () => {
   assert.equal(suggestCapo(["C", "G", "Am", "Em"]), 0);

@@ -12,19 +12,16 @@ export function transpose(name, semitones, preferFlats) {
   return move(m[1]) + m[2] + (m[3] ? "/" + move(m[3]) : "");
 }
 
+// Does the estimated key of these names use flats? Tonic = most frequent chord, ties to the earliest.
 export function prefersFlats(names) {
-  let flats = 0, sharps = 0;
-  for (const n of names) {
-    const m = PARSE.exec(n);
-    if (!m) continue;
-    for (const r of [m[1], m[3]]) {
-      if (!r) continue;
-      if (r[1] === "b") flats++;
-      else if (r[1] === "#") sharps++;
-    }
-    if (m[1] === "F") flats++; // F is the one natural root that only flat keys use
-  }
-  return flats > sharps;
+  const count = new Map();
+  for (const n of names) count.set(n, (count.get(n) ?? 0) + 1);
+  let tonic = null, top = 0;
+  for (const [n, c] of count) if (c > top) { tonic = n; top = c; }
+  const m = tonic && PARSE.exec(tonic);
+  if (!m) return false;
+  const minor = /^m(?!aj)/.test(m[2]);
+  return [1, 3, 5, 6, 8, 10].includes((idx(m[1]) + (minor ? 3 : 0)) % 12); // Db Eb F Gb Ab Bb major
 }
 
 const OPEN = /^(?:[CAGED]7?|[AED]m)$/;

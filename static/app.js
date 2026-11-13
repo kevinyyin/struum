@@ -17,7 +17,7 @@ let activeRow = null;
 let activeChord = null;
 let pollId = 0; // a newer startSong cancels an older poll loop
 
-let flats = false; // chosen once per song from the original chord names
+let flats = false; // spelling follows the displayed key; set in refresh
 let db = null;
 fetch("/static/guitar.json").then((r) => r.json()).then((j) => { db = j; drawInfo(); }).catch(() => {});
 
@@ -51,8 +51,16 @@ function drawInfo() {
   info.append(lab, row);
 }
 
+// Whole semitones within -6..6; written back so the input never shows a rejected value.
+const transposeValue = () => {
+  const t = Math.max(-6, Math.min(6, Math.round(Number($("transpose").value) || 0)));
+  $("transpose").value = t;
+  return t;
+};
+
 function refresh() {
-  current.shift = Number($("transpose").value) - Number($("capo").value);
+  current.shift = transposeValue() - Number($("capo").value);
+  flats = prefersFlats(names().map((n) => transpose(n, current.shift, false)));
   chordEls.forEach(drawChord);
   drawInfo();
 }
@@ -68,8 +76,8 @@ $("transpose").addEventListener("input", refresh);
 $("capo").addEventListener("input", refresh);
 $("reset").addEventListener("click", resetControls);
 $("suggest").addEventListener("click", () => {
-  const t = Number($("transpose").value);
-  $("capo").value = suggestCapo(names().map((n) => transpose(n, t, flats)));
+  const t = transposeValue();
+  $("capo").value = suggestCapo(names().map((n) => transpose(n, t, false)));
   refresh();
 });
 
@@ -88,7 +96,7 @@ export function renderSheet(sheet) {
   head.replaceChildren();
   box.replaceChildren();
   rowEls = []; chordEls = []; activeRow = activeChord = null;
-  flats = false; current.shift = 0;
+  current.shift = 0;
 
   head.append(el("h2", "", sheet.title), el("p", "", sheet.artist));
   const links = el("p");
@@ -132,7 +140,6 @@ export function renderSheet(sheet) {
     rowEls.push(div);
     box.append(div);
   }
-  flats = prefersFlats(names());
   resetControls();
 }
 
