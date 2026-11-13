@@ -18,7 +18,7 @@ def guitar_name(label: str) -> str | None:
     root, rest = label.split(":", 1)
     quality, _, bass = rest.partition("/")
     name = root + QUALITY.get(quality, quality)
-    if bass:
+    if bass in DEGREE and (root in SHARPS or root in FLATS):
         scale = FLATS if "b" in root or root == "F" else SHARPS
         semis = (SHARPS if root in SHARPS else FLATS).index(root)
         name += "/" + scale[(semis + DEGREE[bass]) % 12]
@@ -33,10 +33,10 @@ def clean_chords(segments: list[dict], beats: list[float]) -> list[dict]:
     changes = [(s["start_time"], guitar_name(s["chord"])) for s in segments]
     changes = [(t, n) for t, n in changes if n]
     if len(beats) > 1:
-        changes = [(min(beats, key=lambda b: abs(b - t)), n) for t, n in changes]
-        gap = _gap(beats)
-        nxt = [t for t, _ in changes[1:]] + [float("inf")]
-        changes = [c for c, end in zip(changes, nxt) if end - c[0] >= 2 * gap]
+        # Compare beat indices, not seconds: float jitter would drop exact two-beat chords.
+        idx = [(min(range(len(beats)), key=lambda i: abs(beats[i] - t)), n) for t, n in changes]
+        nxt = [i for i, _ in idx[1:]] + [float("inf")]
+        changes = [(beats[i], n) for (i, n), end in zip(idx, nxt) if end - i >= 2]
     out = []
     for t, n in changes:
         if not out or out[-1]["name"] != n:

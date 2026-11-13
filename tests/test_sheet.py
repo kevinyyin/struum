@@ -44,3 +44,14 @@ def test_suggest_strum():
     assert sheet.suggest_strum(160, 4) == "D  D  D U"
     assert sheet.suggest_strum(100, 3) == "D  D U  D U"
     assert sheet.suggest_strum(100, 7) == "D on every beat"
+
+def test_guitar_name_outside_tables_does_not_raise():
+    assert sheet.guitar_name("C:maj/#4") == "C"
+    assert sheet.guitar_name("C:maj/9") == "C"
+    assert sheet.guitar_name("E#:maj/3") == "E#"
+
+def test_clean_chords_keeps_two_beat_chords():
+    beats = [0.1 * i for i in range(9)]
+    segs = [{"start_time": beats[i], "end_time": beats[i + 2], "chord": c}
+            for i, c in [(0, "C:maj"), (2, "G:maj"), (4, "A:min")]]
+    assert [c["name"] for c in sheet.clean_chords(segs, beats)] == ["C", "G", "Am"]
