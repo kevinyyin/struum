@@ -40,6 +40,12 @@ export const enqueue = (song, io = blob) => update((items, now) => {
   return {items: [...items, item], result: item};
 }, io);
 
+// A sheet edited on the website: the Mac fetches it and re-makes its .txt/.html. One pending pull per song.
+export const enqueuePull = (videoId, io = blob) => update((items, now) => {
+  if (items.some((x) => open(x) && x.type === "pull" && x.video_id === videoId)) return {result: null};
+  return {items: [...items, {id: randomUUID(), type: "pull", video_id: videoId, status: "waiting", at: now, tries: 0}], result: videoId};
+}, io);
+
 // The Mac takes the oldest waiting song (or one it dropped mid-way), marking it "making".
 export const claimNext = (io = blob) => update((items, now) => {
   const i = items.findIndex((x) => x.status === "waiting" || (x.status === "making" && now - x.at > STALE));

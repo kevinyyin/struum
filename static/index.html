@@ -84,6 +84,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
       </div>
       <button type="button" class="pill" id="suggest">Suggest capo</button>
       <a class="pill" href="#/tuner">Tune</a>
+      <button type="button" class="pill" id="edit-chords">Edit chords</button>
       <div class="addpl">
         <button type="button" class="pill" id="add-pl" aria-haspopup="true" aria-expanded="false">Add to playlist</button>
         <div class="menu" id="pl-menu" role="menu" hidden></div>
@@ -155,6 +156,21 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
     <div class="tabs" role="tablist" id="sp-tabs" hidden></div>
     <ul class="list" id="sp-list"></ul>
   </section>
+
+  <div class="editbar" id="editbar" hidden>
+    <div class="eb-row" id="eb-idle">
+      <span class="eb-msg" id="eb-msg">Tap a chord to change it, or a word to add one.</span>
+      <button type="button" class="pill quiet" id="eb-cancel">Cancel</button>
+      <button type="button" class="pill honey" id="eb-save">Save</button>
+    </div>
+    <form class="eb-row" id="eb-edit" hidden>
+      <label for="eb-name" class="sr">Chord</label>
+      <input id="eb-name" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="14" placeholder="e.g. C, Am7, G/B">
+      <button type="button" class="pill quiet" id="eb-remove">Remove</button>
+      <button type="submit" class="pill honey">Done</button>
+      <div class="eb-chips" id="eb-chips" aria-label="Chords in this song"></div>
+    </form>
+  </div>
 
   <div class="player" id="player" hidden>
     <button type="button" class="play" id="play" aria-label="Play">

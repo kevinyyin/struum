@@ -189,6 +189,29 @@ button.pill:hover { border-color: var(--ink-4); }
 .strings li.on { background: var(--honey-tint); box-shadow: inset 0 0 0 1px var(--honey-line); color: var(--rose); }
 .strings li.ok { background: var(--teal); box-shadow: none; color: var(--paper); }
 
+/* chord editing */
+.editbar { position: fixed; left: calc(248px + (100vw - 248px) / 2); bottom: 22px; transform: translateX(-50%); width: min(620px, calc(100vw - 248px - 32px)); z-index: 3;
+  background: var(--paper); border-radius: 17px; padding: 10px 10px 10px 16px; box-shadow: 0 0 0 1px var(--line), 0 16px 36px -18px rgb(70 40 15 / 0.35); }
+.eb-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.eb-msg { flex: 1; color: var(--ink-2); font-size: 12.5px; }
+.eb-row input { flex: 1; min-width: 120px; height: 32px; border-radius: 9px; border: 1px solid var(--line); background: var(--ground); padding: 0 10px; font-weight: 600; font-size: 14px; }
+.eb-row input:focus { outline: 2px solid var(--teal); outline-offset: 1px; }
+.eb-row input[aria-invalid="true"] { border-color: var(--red); }
+.eb-chips { display: flex; gap: 5px; flex-wrap: wrap; flex-basis: 100%; }
+.eb-chips button { border: 0; font: 600 11.5px/1 var(--ui); padding: 6px 8px; border-radius: 7px; background: var(--pill); color: var(--ink-2); }
+.eb-chips button:hover { background: var(--pill-now); color: var(--rose); }
+body.editing-chords main::after { display: none; }
+.editing-chords #sheet .row { cursor: default; }
+.editing-chords #sheet .row:hover { background: none; }
+.editing-chords #sheet .row.bare .c { display: flex; }
+.editing-chords #sheet .w { cursor: copy; border-radius: 6px; }
+.editing-chords #sheet .w:hover { background: rgb(243 226 194 / 0.5); }
+.editing-chords #sheet .chord { cursor: pointer; box-shadow: inset 0 0 0 1px var(--ink-4); background: var(--paper); color: var(--ink-2); transform: none; }
+.editing-chords #sheet .chord.changed { box-shadow: inset 0 0 0 1.5px var(--honey); background: var(--honey-tint); color: var(--rose); }
+.editing-chords #sheet .chord.sel { background: var(--teal); color: var(--paper); box-shadow: none; }
+.chord.add { border: 0; font: 600 12px/1 var(--ui); padding: 5px 8px; border-radius: 7px; background: transparent; color: var(--ink-3); outline: 1px dashed var(--ink-4); outline-offset: -1px; cursor: pointer; }
+@media (max-width: 760px) { .editbar { left: 50%; width: calc(100vw - 20px); bottom: 10px; } }
+
 /* passcode (hosted copy only) */
 body.locked { grid-template-columns: 1fr; }
 body.locked .side { display: none; }

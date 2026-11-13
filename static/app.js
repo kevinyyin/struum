@@ -1,4 +1,4 @@
-import {SHARP, transpose, spelling, suggestCapo, findFingering, diagramSvg} from "/static/chords.js";
+import {SHARP, CHORD, transpose, spelling, suggestCapo, findFingering, diagramSvg} from "/static/chords.js";
 import {tidy} from "/static/tidy.js";
 import {listen, STRINGS, IN_TUNE} from "/static/tuner.js";
 
@@ -473,6 +473,130 @@ $("tn-start").onclick = async () => {
   }
 };
 
+
+/* ---------- chord editing ---------- */
+
+// While editing, the sheet is drawn from a working copy; nothing is saved until Save sends the changed slots.
+let editing = null; // {rows, sel: {r, w, i} | null}
+const slotChords = (rows, r, w) => (w === null ? rows[r].chords : rows[r].words[w].chords);
+const slotKey = (r, w) => `${r}:${w ?? "-"}`;
+
+function changedSlots() {
+  const out = new Map(); // key -> names
+  if (!editing) return out;
+  editing.rows.forEach((row, r) => {
+    const orig = current.sheet.rows[r];
+    const slots = row.type === "instrumental" ? [null] : row.words.map((_, k) => k);
+    for (const w of slots) {
+      const now = slotChords(editing.rows, r, w).map((c) => c.name), was = slotChords(current.sheet.rows, r, w).map((c) => c.name);
+      if (now.join("|") !== was.join("|") || orig.type !== row.type) out.set(slotKey(r, w), {r, w, names: now});
+    }
+  });
+  return out;
+}
+
+function startEditing() {
+  editing = {rows: structuredClone(current.sheet.rows), sel: null};
+  audio.pause();
+  document.body.classList.add("editing-chords");
+  $("player").hidden = true;
+  $("editbar").hidden = false;
+  redrawEditing();
+}
+
+function stopEditing() {
+  editing = null;
+  document.body.classList.remove("editing-chords");
+  $("editbar").hidden = true;
+  $("player").hidden = false;
+  drawRows(current.sheet.rows);
+  refresh();
+  buildTrack();
+  drawLoop();
+  activeRow = -2;
+  highlight(audio.currentTime);
+}
+
+function redrawEditing() {
+  drawRows(editing.rows);
+  refresh();
+  const n = changedSlots().size;
+  $("eb-msg").textContent = n ? `${n} ${n === 1 ? "change" : "changes"} not saved yet. Tap a chord or a word to keep going.`
+    : "Tap a chord to change it, or a word to add one.";
+  $("eb-idle").hidden = !!editing.sel;
+  $("eb-edit").hidden = !editing.sel;
+}
+
+function selectSlot(r, w, i) {
+  editing.sel = {r, w, i};
+  redrawEditing();
+  const c = slotChords(editing.rows, r, w)[i];
+  $("eb-name").value = c ? transpose(c.name, current.shift, scale) : "";
+  $("eb-name").removeAttribute("aria-invalid");
+  $("eb-remove").hidden = !c;
+  // quick picks: the chords already in this song, as shown
+  $("eb-chips").replaceChildren(...[...new Set(chordEls.map((x) => x.textContent))].slice(0, 12).map((name) => {
+    const b = el("button", "", name);
+    b.type = "button";
+    b.onclick = () => { $("eb-name").value = name; $("eb-edit").requestSubmit(); };
+    return b;
+  }));
+  $("eb-name").focus();
+}
+
+function setSlot(names) {
+  const {r, w} = editing.sel;
+  const holder = w === null ? editing.rows[r] : editing.rows[r].words[w];
+  const old = w === null ? holder.chords : holder.chords;
+  const start = w === null ? editing.rows[r].start : holder.start ?? editing.rows[r].start;
+  const next = names.map((name, k) => ({name, time: old[k]?.time ?? start}));
+  if (w === null) editing.rows[r].chords = next; else editing.rows[r].words[w].chords = next;
+  editing.sel = null;
+  redrawEditing();
+}
+
+$("eb-edit").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const typed = $("eb-name").value.trim().replace(/^([a-g])/, (m) => m.toUpperCase());
+  const {r, w, i} = editing.sel;
+  const names = slotChords(editing.rows, r, w).map((c) => c.name);
+  if (!typed) { names.splice(i, 1); return setSlot(names); }
+  if (!CHORD.test(typed)) { $("eb-name").setAttribute("aria-invalid", "true"); return; }
+  names[i] = transpose(typed, -current.shift); // typed as shown (capo, transpose); kept in the song's own key
+  setSlot(names);
+});
+$("eb-remove").onclick = () => {
+  const {r, w, i} = editing.sel;
+  const names = slotChords(editing.rows, r, w).map((c) => c.name);
+  names.splice(i, 1);
+  setSlot(names);
+};
+$("edit-chords").onclick = () => (editing ? null : startEditing());
+$("eb-cancel").onclick = stopEditing;
+$("eb-save").onclick = async () => {
+  const ops = [...changedSlots().values()].map(({r, w, names}) => ({row: r, word: w, names}));
+  if (!ops.length) return stopEditing();
+  const id = current.sheet.video_id;
+  let res = null;
+  try {
+    res = await fetch(`/api/songs/${id}/chords`, {method: "PUT", headers: {"Content-Type": "application/json"}, body: JSON.stringify({ops})});
+  } catch { /* reported below */ }
+  if (!res?.ok) {
+    const body = await res?.json().catch(() => ({}));
+    return setError(body?.error || body?.detail || "Could not save your chords.");
+  }
+  const saved = await res.json();
+  sheets.set(id, saved);
+  current.sheet = saved;
+  stopEditing();
+  $("edit-chords").textContent = "Saved";
+  setTimeout(() => { $("edit-chords").textContent = "Edit chords"; }, 2000);
+};
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape" || !editing) return;
+  if (editing.sel) { editing.sel = null; redrawEditing(); } else stopEditing();
+});
+
 /* ---------- views ---------- */
 
 const VIEWS = ["login", "job", "song", "songs", "spotify", "playlists", "playlist", "tuner"];
@@ -483,7 +607,7 @@ function show(v) {
   for (const name of VIEWS) $(`view-${name}`).hidden = name !== v;
   $("player").hidden = v !== "song" || !current.sheet;
   document.body.classList.toggle("playing-view", !$("player").hidden);
-  if (v !== "song") { audio.pause(); closeMenu(); } // the player lives on the song page
+  if (v !== "song") { audio.pause(); closeMenu(); if (editing) stopEditing(); } // the player lives on the song page
   if (v !== "tuner") stopTuner(); // the microphone is only on while the tuner page is open
   else settle();
   const fromList = v === "song" && inList;
@@ -662,19 +786,54 @@ export function renderSheet(sheet) {
   strum.replaceChildren(el("b", "", sheet.strum || ""),
     el("span", "", `Suggested pattern for ${sheet.bpm} BPM in ${sheet.beats_per_bar || 4}/4. A starting point, not detected from the recording.`));
 
+  drawRows(sheet.rows);
+
+  ctl.capo = ctl.transpose = 0;
+  refresh();
+  audio.src = `/data/${sheet.video_id}/audio.mp3`;
+  $("play").classList.remove("on");
+  buildTrack();
+  drawLoop();
+  highlight(0);
+  $("main").scrollTop = 0;
+}
+
+// The lyric and chord rows. While editing, every chord and word is a target.
+function drawRows(data) {
+  rowEls = []; chordEls = []; activeChord = null;
   const box = $("sheet");
   box.replaceChildren();
-  const lyricIdx = sheet.rows.flatMap((r, i) => (r.type === "instrumental" ? [] : [i]));
+  const changed = changedSlots();
+  const chordFor = (c, r, w, i) => {
+    const s = chordEl(c);
+    if (editing) {
+      s.tabIndex = 0;
+      s.setAttribute("role", "button");
+      s.classList.toggle("changed", changed.has(slotKey(r, w)));
+      s.classList.toggle("sel", editing.sel?.r === r && editing.sel?.w === w && editing.sel?.i === i);
+      s.onclick = (e) => { e.stopPropagation(); selectSlot(r, w, i); };
+      s.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); selectSlot(r, w, i); } };
+    }
+    return s;
+  };
+  const lyricIdx = data.flatMap((r, i) => (r.type === "instrumental" ? [] : [i]));
   const first = lyricIdx[0] ?? Infinity, last = lyricIdx.at(-1) ?? -1;
   let lastLabel = "";
-  sheet.rows.forEach((row, i) => {
+  data.forEach((row, i) => {
     const div = el("div", "row");
     if (row.type === "instrumental") {
       const label = i < first ? "Intro" : i > last ? "Outro" : row.chords.length >= 3 ? "Instrumental" : "";
       if (label && label !== lastLabel) box.append(el("p", "label", label));
       lastLabel = label;
       div.classList.add("inst");
-      row.chords.forEach((c) => div.append(chordEl(c)));
+      row.chords.forEach((c, k) => div.append(chordFor(c, i, null, k)));
+      if (editing) {
+        const add = el("button", "chord add", "+");
+        add.type = "button";
+        add.setAttribute("aria-label", "Add a chord to this row");
+        add.onclick = (e) => { e.stopPropagation(); selectSlot(i, null, row.chords.length); };
+        div.append(add);
+      }
     } else {
       lastLabel = "";
       if (!row.words.some((w) => w.chords.length)) div.classList.add("bare");
@@ -682,7 +841,8 @@ export function renderSheet(sheet) {
         const next = row.words[k + 1];
         const span = el("span", "w");
         const top = el("span", "c");
-        w.chords.forEach((c) => top.append(chordEl(c)));
+        w.chords.forEach((c, n) => top.append(chordFor(c, i, k, n)));
+        if (editing) span.onclick = () => selectSlot(i, k, w.chords.length); // tap a word: add a chord there
         span.append(top, w.text);
         if (next && CJK.test(w.text.slice(-1)) && CJK.test(next.text[0])) span.classList.add("join");
         div.append(span);
@@ -697,15 +857,6 @@ export function renderSheet(sheet) {
     rowEls.push(div);
     box.append(div);
   });
-
-  ctl.capo = ctl.transpose = 0;
-  refresh();
-  audio.src = `/data/${sheet.video_id}/audio.mp3`;
-  $("play").classList.remove("on");
-  buildTrack();
-  drawLoop();
-  highlight(0);
-  $("main").scrollTop = 0;
 }
 
 /* ---------- player, song map, loop ---------- */
@@ -748,6 +899,7 @@ function setLoop(from, to) {
 }
 
 function rowAction(i, extend) {
+  if (editing) return; // taps edit chords instead
   if (extend) return setLoop(loop ? loop.from : Math.max(activeRow, 0), i);
   audio.currentTime = rowStart(i);
   highlight(audio.currentTime);

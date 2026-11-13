@@ -35,6 +35,17 @@ async function remotePaths() {
   return have;
 }
 
+// After a chord edit: the three sheet files only (no audio, no library index).
+async function uploadSheets(ids) {
+  for (const id of ids) {
+    for (const file of ["sheet.json", "sheet.txt", "sheet.html"]) {
+      const body = await readFile(new URL(`${id}/${file}`, DATA));
+      await put(blobPath(id, file), body, {access: "private", addRandomSuffix: false, allowOverwrite: true, contentType: FILES[file]});
+    }
+    console.log(`sync: sheet files for ${id}`);
+  }
+}
+
 async function main(ids) {
   if (!process.env.BLOB_READ_WRITE_TOKEN) {
     console.error("sync: BLOB_READ_WRITE_TOKEN is not set; nothing uploaded.");
@@ -57,4 +68,8 @@ async function main(ids) {
   console.log(`sync: library.json (${songs.length} songs)`);
 }
 
-await main(process.argv.slice(2));
+const args = process.argv.slice(2);
+if (args[0] === "--sheet") {
+  if (!process.env.BLOB_READ_WRITE_TOKEN) { console.error("sync: BLOB_READ_WRITE_TOKEN is not set"); process.exit(1); }
+  await uploadSheets(args.slice(1));
+} else await main(args);

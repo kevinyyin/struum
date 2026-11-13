@@ -204,3 +204,48 @@ def test_playlists_round_trip_through_the_local_file(monkeypatch, tmp_path):
     assert client.put("/api/playlists", json={"playlists": [{"id": "p1", "name": "x", "songs": ["../../etc"]}],
                                               "etag": again["etag"]}).status_code == 422
     assert client.get("/api/playlists").json()["playlists"][0]["name"] == "Warm-up"
+
+
+def test_chord_edits_rewrite_the_sheet_files(monkeypatch, tmp_path):
+    import json
+    monkeypatch.delenv("BLOB_READ_WRITE_TOKEN", raising=False)
+    monkeypatch.setattr(pipeline, "DATA", tmp_path)
+    vid = "abcdefghijk"
+    (tmp_path / vid).mkdir()
+    doc = {"video_id": vid, "url": "https://www.youtube.com/watch?v=" + vid, "title": "T", "artist": "A", "duration": 10,
+           "bpm": 100, "beats_per_bar": 4, "strum": "D", "language": "en", "rows": [
+               {"type": "lyrics", "start": 1.0, "end": 3.0, "words": [
+                   {"text": "My", "start": 1.0, "chords": [{"name": "G", "time": 1.0}]},
+                   {"text": "friends", "start": 1.5, "chords": []}]}]}
+    (tmp_path / vid / "sheet.json").write_text(json.dumps(doc))
+    r = client.put(f"/api/songs/{vid}/chords", json={"ops": [{"row": 0, "word": 1, "names": ["C"]}]})
+    assert r.status_code == 200
+    saved = json.loads((tmp_path / vid / "sheet.json").read_text())
+    assert saved["rows"][0]["words"][1]["chords"] == [{"name": "C", "time": 1.5}]
+    assert "C" in (tmp_path / vid / "sheet.txt").read_text() and (tmp_path / vid / "sheet.html").is_file()
+    assert client.put(f"/api/songs/{vid}/chords", json={"ops": [{"row": 0, "word": 0, "names": ["<x>"]}]}).status_code == 422
+    assert client.put("/api/songs/..%2Fetc/chords", json={"ops": []}).status_code == 404
+    assert client.put("/api/songs/zzzzzzzzzzz/chords", json={"ops": []}).status_code == 404
+
+
+def test_queue_pulls_a_sheet_edited_on_the_website(monkeypatch, tmp_path):
+    import json, subprocess as sp
+    monkeypatch.setattr(pipeline, "DATA", tmp_path)
+    vid = "abcdefghijk"
+    (tmp_path / vid).mkdir()
+    edited = {"video_id": vid, "url": "u", "title": "T", "artist": "A", "bpm": 90, "beats_per_bar": 4, "strum": "D",
+              "language": "en", "rows": []}
+    calls = []
+
+    def fake_node(*args, timeout=120, stdin=None):
+        calls.append(args)
+        if args[:2] == ("queue.mjs", "next"):
+            return sp.CompletedProcess(args, 0, json.dumps({"id": "q2", "type": "pull", "video_id": vid}), "")
+        if args[:2] == ("edit.mjs", "pull"):
+            return sp.CompletedProcess(args, 0, json.dumps(edited), "")
+        return sp.CompletedProcess(args, 0, "", "")
+
+    monkeypatch.setattr(app_module, "node_script", fake_node)
+    assert app_module.serve_queue_once() == "made"
+    assert json.loads((tmp_path / vid / "sheet.json").read_text()) == edited
+    assert calls[-2:] == [("sync.mjs", "--sheet", vid), ("queue.mjs", "finish", "q2", "done", vid)]

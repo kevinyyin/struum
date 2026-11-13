@@ -2,6 +2,8 @@ export const SHARP = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#"
 export const FLAT = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
 const MIXED = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
 const idx = (n) => { const i = SHARP.indexOf(n); return i < 0 ? FLAT.indexOf(n) : i; };
+// A chord name someone may type: root, a short quality, optional bass. Shared with api/_edit.js.
+export const CHORD = /^[A-G][#b]?[A-Za-z0-9#b()+]{0,8}(\/[A-G][#b]?)?$/;
 // root, quality suffix (may be unknown), optional bass
 const PARSE = /^([A-G][#b]?)(.*?)(?:\/([A-G][#b]?))?$/;
 

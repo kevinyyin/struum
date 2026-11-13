@@ -16,7 +16,7 @@ export async function GET(request) {
     const {presignedUrl} = await presignUrl(token, {operation: "get", pathname: path, access: "private", validUntil});
     return new Response(null, {status: 302, headers: {location: presignedUrl, "cache-control": "no-store"}});
   }
-  const r = await get(path, {access: "private"});
+  const r = await get(path, {access: "private", useCache: false}); // sheets can be edited: always the latest
   if (r?.statusCode !== 200) return new Response("Not found", {status: 404});
-  return new Response(r.stream, {headers: {"content-type": FILES[file], "cache-control": "private, max-age=300"}});
+  return new Response(r.stream, {headers: {"content-type": FILES[file], "cache-control": "no-cache"}});
 }

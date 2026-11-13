@@ -34,6 +34,7 @@ Open http://127.0.0.1:8000/ (use `127.0.0.1`, not `localhost`: Spotify only acce
 - One song is processed at a time; you can browse while it runs.
 - On a song: capo and transpose steppers, **Suggest capo**, chord diagrams and a suggested strum (tabs), and a floating player. The current line darkens and its chord turns teal.
 - **Playlists:** make them on the Playlists page or with **Add to playlist** on any song; reorder and remove songs on the playlist's page. Open a song from a playlist to get Previous / Next, and when a song ends the next one starts. With `BLOB_READ_WRITE_TOKEN` set, playlists are shared between the Mac and the hosted copy (`playlists.json` in the Blob store); without it they live in `data/playlists.json`.
+- **Edit chords** (on a song): tap a chord to change or remove it, tap a word to add one, **+** adds to an intro/solo row; Save keeps them. Type chords as you see them (with your capo/transpose); they are stored in the song's own key, and the .txt/.html are rewritten. Edits made on the website reach the Mac through the queue.
 - **Tuner** (nav, or **Tune** on a song): standard tuning E A D G B e, shows the nearest string, how many cents flat or sharp, and turns teal when in tune. The microphone is analysed in the browser only.
 - **Practise a part:** the loop button (or `L`) loops the current line; shift-click another line to extend the loop, or drag across the bar to loop several lines. `Space` plays and pauses.
 

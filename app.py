@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 import os
 import shutil
 import subprocess
@@ -14,6 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict
 
 import pipeline
+import sheet as sheet_mod
 
 ROOT = Path(__file__).parent
 STATIC = ROOT / "static"
@@ -97,6 +99,15 @@ def serve_queue_once() -> str:
         item = json.loads(out.stdout.strip() or "null")
         if not item:
             return "empty"
+        if item.get("type") == "pull":  # chords edited on the website
+            pulled = node_script("edit.mjs", "pull", item["video_id"], timeout=60)
+            if pulled.returncode == 0 and (pipeline.DATA / item["video_id"]).is_dir():
+                save_sheet(json.loads(pulled.stdout))
+                node_script("sync.mjs", "--sheet", item["video_id"])
+                node_script("queue.mjs", "finish", item["id"], "done", item["video_id"])
+            else:
+                node_script("queue.mjs", "finish", item["id"], "failed", "Could not fetch the edited sheet.")
+            return "made"
         log.info("making %s - %s for the website", item["artist"], item["title"])
         sheet, error = make({k: item[k] for k in ("artist", "title", "duration")}, lambda i, name: None)
         if sheet:
@@ -132,7 +143,7 @@ if os.environ.get("BLOB_READ_WRITE_TOKEN") and shutil.which("node"):
 async def revalidate(request, call_next):
     # The page's own files change with the code; make the browser check instead of reusing a stale copy.
     response = await call_next(request)
-    if request.url.path == "/" or request.url.path.startswith("/static/"):
+    if request.url.path == "/" or request.url.path.startswith("/static/") or request.url.path.endswith(("/sheet.json", "/sheet.txt", "/sheet.html")):
         response.headers["Cache-Control"] = "no-cache"
     return response
 
@@ -179,6 +190,45 @@ def library():
         made = s.get("made") or f.stat().st_mtime  # older sheets have no "made": use the file time
         songs.append({k: s.get(k) for k in ("video_id", "title", "artist", "duration")} | {"made": made})
     return sorted(songs, key=lambda s: -s["made"])
+
+
+VID = re.compile(r"^[\w-]{6,20}$")
+
+
+class ChordEdits(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    ops: list
+
+
+def save_sheet(doc: dict) -> None:
+    """Write a song's sheet.json, .txt and .html (each replaced whole, never half-written)."""
+    folder = pipeline.DATA / doc["video_id"]
+    for name, text in (("sheet.json", json.dumps(doc, ensure_ascii=False)),
+                       ("sheet.txt", sheet_mod.render_txt(doc)), ("sheet.html", sheet_mod.render_html(doc))):
+        tmp = folder / f".{name}.tmp"
+        tmp.write_text(text, encoding="utf-8")
+        tmp.replace(folder / name)
+
+
+# Hand edits to a song's chords (rules in api/_edit.js, shared with the website).
+@app.put("/api/songs/{video_id}/chords")
+def edit_chords(video_id: str, body: ChordEdits):
+    f = pipeline.DATA / video_id / "sheet.json"
+    if not VID.match(video_id) or not f.is_file():
+        raise HTTPException(404, "Unknown song.")
+    out = node_script("edit.mjs", "apply", stdin=json.dumps({"sheet": json.loads(f.read_text(encoding="utf-8")), "ops": body.ops}))
+    if out.returncode == 2:
+        raise HTTPException(422, out.stderr.strip() or "Those chords don't look right.")
+    if out.returncode != 0:
+        log.warning("edit: %s", out.stderr.strip()[-300:])
+        raise HTTPException(502, "Could not save your chords.")
+    doc = json.loads(out.stdout)
+    save_sheet(doc)
+    if os.environ.get("BLOB_READ_WRITE_TOKEN"):
+        sync_out = node_script("sync.mjs", "--sheet", video_id)  # the website shows the edit right away
+        if sync_out.returncode != 0:
+            log.warning("edit sync: %s", sync_out.stderr.strip()[-300:])
+    return doc
 
 
 class Playlists(BaseModel):
