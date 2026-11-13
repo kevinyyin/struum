@@ -53,7 +53,7 @@ Each song is saved in `data/<youtube id>/` as `sheet.json`, `sheet.txt`, `sheet.
 - Capo and transpose change the page only; saved files stay in the original key.
 - "Suggest capo" picks the fret 0-7 with the most open shapes. For C G Am F it suggests 5 (G D Em C).
 - Lyric timing from LRCLIB gets one global offset correction to line up with the video. If LRCLIB has nothing, lyrics are transcribed with Whisper (prefix the run command with `FORCE_TRANSCRIBE=1` to skip LRCLIB). Title and credit lines before the first lyric ("词：…", "Artist - Title") are dropped. If the lyrics contain Chinese characters (and no kana), they are aligned as Chinese whatever language the audio detection says.
-- Chord fingerings in `static/guitar.json` come from [chords-db](https://github.com/tombatossals/chords-db) (MIT licence).
+- Chord fingerings in `static/guitar.json` come from [chords-db](https://github.com/tombatossals/chords-db) (MIT licence; licence text in `static/guitar.json.LICENSE`).
 
 ## Known limits
 
