@@ -23,7 +23,7 @@ fetch("/static/guitar.json").then((r) => r.json()).then((j) => { db = j; drawInf
 
 // The only place chord text is drawn.
 export function drawChord(span) {
-  span.textContent = current.shift ? transpose(span.dataset.name, current.shift, flats) : span.dataset.name;
+  span.textContent = transpose(span.dataset.name, current.shift, flats); // re-spells at shift 0 too
 }
 
 const names = () => chordEls.map((c) => c.dataset.name);
@@ -92,6 +92,7 @@ export function renderSheet(sheet) {
   const head = $("head"), box = $("sheet");
   head.replaceChildren();
   box.replaceChildren();
+  box.lang = sheet.language;
   rowEls = []; chordEls = []; activeRow = activeChord = null;
   current.shift = 0;
 
@@ -102,7 +103,7 @@ export function renderSheet(sheet) {
     a.href = href;
     return a;
   };
-  links.append(link(sheet.url, "Video"), " | ",
+  links.append("Source: ", link(sheet.url, sheet.url), " | ",
     link(`/data/${sheet.video_id}/sheet.txt`, "Download .txt"), " | ",
     link(`/data/${sheet.video_id}/sheet.html`, "Download .html"));
   audio = el("audio");
@@ -168,7 +169,6 @@ export async function startSong(body) {
 }
 
 async function run(body) {
-  const me = ++pollId;
   setError("");
   setStatus("Starting...");
   let res;
@@ -188,6 +188,7 @@ async function run(body) {
     if (res.status === 422) return setError("That does not look like a valid link.");
     return setError("Something went wrong.");
   }
+  const me = ++pollId; // only now: a refused request must not cancel the running job's poll
   const {id} = await res.json();
   while (me === pollId) {
     let job;

@@ -7,7 +7,7 @@ QUALITY = {
     "maj": "", "min": "m", "7": "7", "maj7": "maj7", "min7": "m7", "dim": "dim",
     "dim7": "dim7", "hdim7": "m7b5", "aug": "aug", "sus2": "sus2", "sus4": "sus4",
     "maj6": "6", "min6": "m6", "9": "9", "maj9": "maj9", "min9": "m9",
-    "minmaj7": "mMaj7",
+    "minmaj7": "mMaj7", "sus4(b7)": "7sus4",
 }
 DEGREE = {"2": 2, "b3": 3, "3": 4, "4": 5, "b5": 6, "5": 7, "6": 9, "b7": 10, "7": 11}
 SHARPS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
@@ -147,7 +147,8 @@ STYLE = """body{font-family:sans-serif;max-width:60em;margin:2em auto;padding:0 
 .row{margin:1em 0}.w{display:inline-block;vertical-align:bottom;margin-right:.4em}
 .chord{display:inline-block;border:1px solid #888;border-radius:3px;padding:0 .3em;
 margin-right:.2em;font-weight:bold;font-size:.85em}
-.w .chord{display:block;width:max-content;margin-bottom:.1em}"""
+.w .chord{display:block;width:max-content;margin-bottom:.1em}
+.w.join{margin-right:0}.strum{white-space:pre}"""
 
 
 def render_html(sheet: dict) -> str:
@@ -158,11 +159,14 @@ def render_html(sheet: dict) -> str:
         if row["type"] == "instrumental":
             inner = "".join(chord(c) for c in row["chords"])
         else:
+            ws = row["words"]
             inner = "".join(
-                '<span class="w">' + "".join(chord(c) for c in w["chords"]) + e(w["text"]) + "</span>"
-                for w in row["words"])
+                # no word gap between two wide characters, as on the page and in the .txt
+                f'<span class="w{" join" if n and _wide(w["text"][-1:]) and _wide(n["text"][:1]) else ""}">'
+                + "".join(chord(c) for c in w["chords"]) + e(w["text"]) + "</span>"
+                for w, n in zip(ws, ws[1:] + [None]))
         body.append(f'<div class="row">{inner}</div>')
-    return (f'<!DOCTYPE html><html><head><meta charset="utf-8"><title>{e(sheet["title"])}</title>'
-            f'<style>{STYLE}</style></head><body><h1>{e(sheet["title"])}</h1>'
+    return (f'<!DOCTYPE html><html lang="{e(sheet["language"])}"><head><meta charset="utf-8">'
+            f'<title>{e(sheet["title"])}</title><style>{STYLE}</style></head><body><h1>{e(sheet["title"])}</h1>'
             f'<h2>{e(sheet["artist"])}</h2><p><a href="{e(sheet["url"])}">{e(sheet["url"])}</a></p>'
-            f'<p>{e(_header(sheet)[3])}</p>{"".join(body)}</body></html>')
+            f'<p class="strum">{e(_header(sheet)[3])}</p>{"".join(body)}</body></html>')

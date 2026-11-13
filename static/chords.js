@@ -24,7 +24,7 @@ export function prefersFlats(names) {
   return [1, 3, 5, 6, 8, 10].includes((idx(m[1]) + (minor ? 3 : 0)) % 12); // Db Eb F Gb Ab Bb major
 }
 
-const OPEN = /^(?:[CAGED]7?|[AED]m)$/;
+const OPEN = /^(?:[CAGED]7?|[AED]m7?)$/;
 
 export function suggestCapo(names) {
   let best = 0, bestScore = -1;
@@ -39,7 +39,7 @@ export function suggestCapo(names) {
 const KEY = {C: "C", "C#": "Csharp", Db: "Csharp", D: "D", "D#": "Eb", Eb: "Eb", E: "E", F: "F",
   "F#": "Fsharp", Gb: "Fsharp", G: "G", "G#": "Ab", Ab: "Ab", A: "A", "A#": "Bb", Bb: "Bb", B: "B"};
 const SUFFIX = {"": "major", m: "minor", mMaj7: "mmaj7"};
-for (const s of ["7", "maj7", "m7", "dim", "dim7", "m7b5", "aug", "sus2", "sus4", "6", "m6", "9", "maj9", "m9"]) SUFFIX[s] = s;
+for (const s of ["7", "maj7", "m7", "dim", "dim7", "m7b5", "aug", "sus2", "sus4", "6", "m6", "9", "maj9", "m9", "11", "13", "7sus4"]) SUFFIX[s] = s;
 
 export function findFingering(db, name) {
   const m = PARSE.exec(name);

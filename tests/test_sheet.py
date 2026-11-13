@@ -8,6 +8,7 @@ def test_guitar_name():
     assert sheet.guitar_name("F:maj7") == "Fmaj7"
     assert sheet.guitar_name("D:sus4") == "Dsus4"
     assert sheet.guitar_name("B:hdim7") == "Bm7b5"
+    assert sheet.guitar_name("C:sus4(b7)") == "C7sus4"
     assert sheet.guitar_name("C:maj/3") == "C/E"
     assert sheet.guitar_name("A:min/b3") == "Am/C"
     assert sheet.guitar_name("G:maj/5") == "G/D"
@@ -86,7 +87,7 @@ def test_build_rows_no_lyrics_gives_chord_only_rows():
     assert all(len(r["chords"]) <= 8 for r in rows)
 
 def _sheet(rows):
-    return {"title": "T", "artist": "A", "url": "https://youtu.be/x", "bpm": 120.0,
+    return {"title": "T", "artist": "A", "url": "https://youtu.be/x", "bpm": 120.0, "language": "en",
             "beats_per_bar": 4, "strum": "D  D U  U D U (eighths)", "rows": rows}
 
 def test_render_txt_chord_starts_above_its_word():
@@ -121,6 +122,14 @@ def test_render_html_escapes_and_stacks():
     html = sheet.render_html(_sheet(rows))
     assert "&lt;b&gt;" in html and "<b>" not in html
     assert 'class="chord"' in html and "T" in html and "https://youtu.be/x" in html
+    assert '<html lang="en">' in html and '<p class="strum">' in html
+
+def test_render_html_joins_wide_characters_only():
+    words = [{"text": t, "start": float(i), "end": i + 0.5} for i, t in enumerate(["故", "事", "you", "的"])]
+    rows = sheet.build_rows([{"start": 0.0, "end": 4.0, "words": words}], [], 4.0)
+    html = sheet.render_html(_sheet(rows))
+    assert ('<span class="w join">故</span><span class="w">事</span>'
+            '<span class="w">you</span><span class="w">的</span>') in html
 
 def test_build_rows_each_chord_only_change_appears_once_in_its_gap():
     def ln(a, b):

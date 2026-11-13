@@ -22,16 +22,21 @@ test("spelling follows the displayed key", () => {
   assert.equal(shown(-2), "Bb F Gm Eb");
   assert.equal(shown(-3), "A E F#m D");
   assert.equal(shown(0), "C G Am F");
+  // The recognizer spells Ab/Eb/Bb as flats whatever the key: at shift 0 an E-major song still reads in sharps.
+  const e = ["E", "B", "Abm", "A", "Ebdim"];
+  const flats = prefersFlats(e.map((n) => transpose(n, 0, false)));
+  assert.equal(e.map((n) => transpose(n, 0, flats)).join(" "), "E B G#m A D#dim");
 });
 test("suggestCapo picks the fret with most open shapes", () => {
   assert.equal(suggestCapo(["C", "G", "Am", "Em"]), 0);
   assert.equal(suggestCapo(["E", "B", "C#m", "F#m"]), 4);   // plays as C G Am Dm
   assert.equal(suggestCapo(["C", "G", "Am", "F"]), 5);      // plays as G D Em C
   assert.equal(suggestCapo([]), 0);
+  assert.equal(suggestCapo(["Bm7", "F#m7", "Em7"]), 2);    // m7 shapes count as open: Am7 Em7 Dm7
 });
 test("fingering lookup and diagram", () => {
   const db = JSON.parse(readFileSync(new URL("../static/guitar.json", import.meta.url)));
-  for (const n of ["C", "Am", "G7", "F#m", "Bb", "Dsus4", "Em7", "C#", "Gb", "D#m7"]) assert.ok(findFingering(db, n), n);
+  for (const n of ["C", "Am", "G7", "F#m", "Bb", "Dsus4", "Em7", "C#", "Gb", "D#m7", "G11", "A13", "C7sus4"]) assert.ok(findFingering(db, n), n);
   assert.deepEqual(findFingering(db, "C/E"), findFingering(db, "C"));
   assert.deepEqual(findFingering(db, "Gb"), findFingering(db, "F#"));
   assert.equal(findFingering(db, "Cweird13"), null);
