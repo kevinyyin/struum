@@ -1,1 +1,32 @@
-<!doctype html><title>Strum</title>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Strum</title>
+<style>
+body{font-family:sans-serif;max-width:60em;margin:2em auto;padding:0 1em}
+.row{margin:1em 0;padding:.2em .4em;cursor:pointer;border-left:4px solid transparent}
+.row.now{border-left-color:#06c;background:#eef5ff;font-weight:bold}
+.w{display:inline-block;vertical-align:bottom;margin-right:.4em}
+.w.join{margin-right:0}
+.chord{display:inline-block;border:1px solid #888;border-radius:3px;padding:0 .3em;margin-right:.2em;font-weight:bold;font-size:.85em}
+.w .chord{display:block;width:max-content;margin-bottom:.1em}
+.chord.now{background:#06c;color:#fff;border-color:#06c;text-decoration:underline}
+#error{color:#b00020}
+audio{width:100%;position:sticky;top:0;background:#fff}
+</style>
+</head>
+<body>
+<h1>Strum</h1>
+<form id="go">
+  <label>YouTube link <input id="url" type="url" size="40" required></label>
+  <button type="submit">Go</button>
+</form>
+<p id="status" role="status"></p>
+<p id="error" role="alert"></p>
+<div id="head"></div>
+<div id="sheet"></div>
+<script type="module" src="/static/app.js"></script>
+</body>
+</html>
