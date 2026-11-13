@@ -121,3 +121,14 @@ def test_render_html_escapes_and_stacks():
     html = sheet.render_html(_sheet(rows))
     assert "&lt;b&gt;" in html and "<b>" not in html
     assert 'class="chord"' in html and "T" in html and "https://youtu.be/x" in html
+
+def test_build_rows_each_chord_only_change_appears_once_in_its_gap():
+    def ln(a, b):
+        return {"start": a, "end": b, "words": [{"text": "x", "start": a, "end": b}]}
+    names = "CGFD"
+    changes = [{"time": t, "name": n} for t, n in zip([0.0, 5.0, 20.0, 40.0], names)]
+    rows = sheet.build_rows([ln(2.0, 3.0), ln(10.0, 11.0), ln(30.0, 31.0)], changes, 50.0)
+    assert [r["type"] for r in rows] == [
+        "instrumental", "lyrics", "instrumental", "lyrics", "instrumental", "lyrics", "instrumental"]
+    assert [[c["name"] for c in r["chords"]] for r in rows if r["type"] == "instrumental"] == [
+        ["C"], ["G"], ["F"], ["D"]]

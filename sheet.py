@@ -84,8 +84,10 @@ def build_rows(lines: list[dict], changes: list[dict], duration: float) -> list[
     def owner(c):
         return next((l for l in lines if l["start"] - LEAD_IN <= c["time"] <= l["end"]), None)
 
+    loose = [c for c in changes if owner(c) is None]  # each is consumed by exactly one gap
     for line in lines:
-        free.extend(c for c in changes if owner(c) is None and c["time"] < line["start"])
+        free.extend(c for c in loose if c["time"] < line["start"])
+        loose = [c for c in loose if c["time"] >= line["start"]]
         flush(line["start"])
         words = [{"text": w["text"], "start": w["start"], "chords": []} for w in line["words"]]
         for c in (c for c in changes if owner(c) is line):
@@ -96,7 +98,7 @@ def build_rows(lines: list[dict], changes: list[dict], duration: float) -> list[
             words[0]["chords"].append({"name": sounding[-1]["name"], "time": line["start"]})
         rows.append({"type": "lyrics", "start": line["start"], "end": line["end"],
                      "words": words})
-    free.extend(c for c in changes if owner(c) is None and (not rows or c["time"] > rows[-1]["end"]))
+    free.extend(loose)
     flush(duration)
     return rows
 
