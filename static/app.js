@@ -1,4 +1,4 @@
-import {transpose, prefersFlats, suggestCapo, findFingering, diagramSvg} from "/static/chords.js";
+import {SHARP, transpose, spelling, suggestCapo, findFingering, diagramSvg} from "/static/chords.js";
 
 export const current = {sheet: null, shift: 0};
 
@@ -17,13 +17,13 @@ let activeRow = null;
 let activeChord = null;
 let pollId = 0; // a newer startSong cancels an older poll loop
 
-let flats = false; // spelling follows the displayed key; set in refresh
+let scale = SHARP; // spelling follows the displayed key; set in refresh
 let db = null;
 fetch("/static/guitar.json").then((r) => r.json()).then((j) => { db = j; drawInfo(); }).catch(() => {});
 
 // The only place chord text is drawn.
 export function drawChord(span) {
-  span.textContent = transpose(span.dataset.name, current.shift, flats); // re-spells at shift 0 too
+  span.textContent = transpose(span.dataset.name, current.shift, scale); // re-spells at shift 0 too
 }
 
 const names = () => chordEls.map((c) => c.dataset.name);
@@ -56,7 +56,7 @@ const transposeValue = () => Math.max(-6, Math.min(6, Math.round(Number($("trans
 
 function refresh() {
   current.shift = transposeValue() - Number($("capo").value);
-  flats = prefersFlats(names().map((n) => transpose(n, current.shift, false)));
+  scale = spelling(names().map((n) => transpose(n, current.shift)));
   chordEls.forEach(drawChord);
   drawInfo();
 }

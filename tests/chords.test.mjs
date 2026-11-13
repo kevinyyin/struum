@@ -1,31 +1,38 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { transpose, prefersFlats, suggestCapo, findFingering, diagramSvg } from "../static/chords.js";
+import { SHARP, FLAT, transpose, spelling, suggestCapo, findFingering, diagramSvg } from "../static/chords.js";
 
 test("transpose", () => {
-  assert.equal(transpose("C", 2, false), "D");
-  assert.equal(transpose("Am7", -2, false), "Gm7");
-  assert.equal(transpose("B", 1, false), "C");
-  assert.equal(transpose("C/E", 2, false), "D/F#");
-  assert.equal(transpose("A", 1, true), "Bb");
-  assert.equal(transpose("F#m7b5", 0, false), "F#m7b5");
-  assert.equal(transpose("???", 3, false), "???");
+  assert.equal(transpose("C", 2), "D");
+  assert.equal(transpose("Am7", -2), "Gm7");
+  assert.equal(transpose("B", 1), "C");
+  assert.equal(transpose("C/E", 2), "D/F#");
+  assert.equal(transpose("A", 1, FLAT), "Bb");
+  assert.equal(transpose("F#m7b5", 0), "F#m7b5");
+  assert.equal(transpose("???", 3), "???");
 });
-test("prefersFlats", () => {
-  assert.equal(prefersFlats(["Bb", "F", "Gm"]), true);
-  assert.equal(prefersFlats(["E", "F#m", "A"]), false);
+test("spelling", () => {
+  assert.equal(spelling(["Bb", "F", "Gm"]), FLAT);
+  assert.equal(spelling(["E", "F#m", "A"]), SHARP);
 });
 test("spelling follows the displayed key", () => {
   const song = ["C", "G", "Am", "F"];
-  const shown = (shift) => song.map((n) => transpose(n, shift, prefersFlats(song.map((x) => transpose(x, shift, false))))).join(" ");
+  const shown = (shift) => song.map((n) => transpose(n, shift, spelling(song.map((x) => transpose(x, shift))))).join(" ");
   assert.equal(shown(-2), "Bb F Gm Eb");
   assert.equal(shown(-3), "A E F#m D");
   assert.equal(shown(0), "C G Am F");
   // The recognizer spells Ab/Eb/Bb as flats whatever the key: at shift 0 an E-major song still reads in sharps.
   const e = ["E", "B", "Abm", "A", "Ebdim"];
-  const flats = prefersFlats(e.map((n) => transpose(n, 0, false)));
-  assert.equal(e.map((n) => transpose(n, 0, flats)).join(" "), "E B G#m A D#dim");
+  const sc = spelling(e.map((n) => transpose(n, 0)));
+  assert.equal(e.map((n) => transpose(n, 0, sc)).join(" "), "E B G#m A D#dim");
+});
+const shown0 = (song) => { const sc = spelling(song); return song.map((n) => transpose(n, 0, sc)).join(" "); };
+test("C and G keys spell borrowed chords as flats, E key keeps sharps", () => {
+  assert.equal(shown0(["C", "F", "G", "C", "Bb", "Ab"]), "C F G C Bb Ab");
+  assert.equal(shown0(["G", "C", "G", "D", "Bb"]), "G C G D Bb");
+  assert.equal(shown0(["E", "A", "B", "C#m", "Abm", "E"]), "E A B C#m G#m E");
+  assert.equal(shown0(["Bb", "F", "Gm", "Bb"]), "Bb F Gm Bb");
 });
 test("suggestCapo picks the fret with most open shapes", () => {
   assert.equal(suggestCapo(["C", "G", "Am", "Em"]), 0);

@@ -1,27 +1,28 @@
-const SHARP = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-const FLAT = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
+export const SHARP = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+export const FLAT = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
+const MIXED = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
 const idx = (n) => { const i = SHARP.indexOf(n); return i < 0 ? FLAT.indexOf(n) : i; };
 // root, quality suffix (may be unknown), optional bass
 const PARSE = /^([A-G][#b]?)(.*?)(?:\/([A-G][#b]?))?$/;
 
-export function transpose(name, semitones, preferFlats) {
+export function transpose(name, semitones, scale = SHARP) {
   const m = PARSE.exec(name);
   if (!m) return name;
-  const scale = preferFlats ? FLAT : SHARP;
   const move = (n) => scale[(idx(n) + semitones % 12 + 12) % 12];
   return move(m[1]) + m[2] + (m[3] ? "/" + move(m[3]) : "");
 }
 
-// Does the estimated key of these names use flats? Tonic = most frequent chord, ties to the earliest.
-export function prefersFlats(names) {
+// Spelling table for the estimated key: flat keys FLAT, C/G/D (and relative minors) MIXED, the rest SHARP. Tonic = most frequent chord, ties to the earliest.
+export function spelling(names) {
   const count = new Map();
   for (const n of names) count.set(n, (count.get(n) ?? 0) + 1);
   let tonic = null, top = 0;
   for (const [n, c] of count) if (c > top) { tonic = n; top = c; }
   const m = tonic && PARSE.exec(tonic);
-  if (!m) return false;
+  if (!m) return SHARP;
   const minor = /^m(?!aj)/.test(m[2]);
-  return [1, 3, 5, 6, 8, 10].includes((idx(m[1]) + (minor ? 3 : 0)) % 12); // Db Eb F Gb Ab Bb major
+  const key = (idx(m[1]) + (minor ? 3 : 0)) % 12; // relative major
+  return [1, 3, 5, 6, 8, 10].includes(key) ? FLAT : [0, 2, 7].includes(key) ? MIXED : SHARP;
 }
 
 const OPEN = /^(?:[CAGED]7?|[AED]m7?)$/;
@@ -29,7 +30,7 @@ const OPEN = /^(?:[CAGED]7?|[AED]m7?)$/;
 export function suggestCapo(names) {
   let best = 0, bestScore = -1;
   for (let f = 0; f <= 7; f++) {
-    const score = names.filter((n) => OPEN.test(transpose(n, -f, false))).length;
+    const score = names.filter((n) => OPEN.test(transpose(n, -f))).length;
     if (score > bestScore) { best = f; bestScore = score; } // strict: ties keep the lower fret
   }
   return best;
