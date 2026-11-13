@@ -45,6 +45,21 @@ let locked = false;
 /* ---------- library ---------- */
 
 export let library = [];
+const SIDE_SONGS = 6; // the sidebar shows the newest few; the Your songs page shows them all
+
+// Sidebar sections fold away; which ones are folded is remembered.
+const folds = new Set(JSON.parse(store.get("strum_folds") || "[]"));
+for (const b of document.querySelectorAll(".fold")) {
+  const section = b.closest(".side-group"), key = b.dataset.fold;
+  const set = (closed) => { section.classList.toggle("folded", closed); b.setAttribute("aria-expanded", String(!closed)); };
+  set(folds.has(key));
+  b.onclick = () => {
+    const closed = !section.classList.contains("folded");
+    set(closed);
+    if (closed) folds.add(key); else folds.delete(key);
+    store.set("strum_folds", JSON.stringify([...folds]));
+  };
+}
 
 /* ---------- the website's queue (hosted copy only): songs your Mac makes ---------- */
 
@@ -156,7 +171,9 @@ function drawLibrary() {
     if (pending(q)) row.append(el("i", "dot busy"));
     side.append(li(row));
   }
-  for (const s of library) side.append(li(songLink(s, "song")));
+  for (const s of library.slice(0, SIDE_SONGS)) side.append(li(songLink(s, "song")));
+  $("songs-all").hidden = library.length <= SIDE_SONGS;
+  $("songs-all").textContent = `All ${library.length}`;
   if (!library.length && !job) side.append(el("li", "side-note", "Songs you make show up here."));
 
   const list = $("songs-list");

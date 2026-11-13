@@ -43,15 +43,15 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
     <button type="submit">Make sheet</button>
   </form>
   <section class="side-group">
-    <h2 class="group">Your songs</h2>
+    <h2 class="group"><button type="button" class="fold" data-fold="songs" aria-expanded="true" aria-controls="side-songs"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 3.8 5 6.3l2.5-2.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Your songs</button> <a href="#/" id="songs-all" hidden>All</a></h2>
     <ul class="songs" id="side-songs"></ul>
   </section>
   <section class="side-group">
-    <h2 class="group">Playlists <a href="#/playlists">All</a></h2>
+    <h2 class="group"><button type="button" class="fold" data-fold="playlists" aria-expanded="true" aria-controls="side-playlists"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 3.8 5 6.3l2.5-2.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Playlists</button> <a href="#/playlists">All</a></h2>
     <ul class="songs" id="side-playlists"></ul>
   </section>
   <section class="side-group" id="side-spotify">
-    <h2 class="group">Recently played <a href="#/spotify" id="sp-all" hidden>See all</a></h2>
+    <h2 class="group"><button type="button" class="fold" data-fold="spotify" aria-expanded="true" aria-controls="sp-quick"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 3.8 5 6.3l2.5-2.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Recently played</button> <a href="#/spotify" id="sp-all" hidden>See all</a></h2>
     <ul class="songs" id="sp-quick"></ul>
     <p class="side-note" id="sp-side-msg"></p>
   </section>
