@@ -35,7 +35,21 @@ def test_fill_word_times_interpolates_missing():
     none = pipeline.fill_word_times([{"text": "x"}, {"text": "y"}], 10.0, 12.0)
     assert [w["start"] for w in none] == pytest.approx([10.0, 11.0])
 
-def test_run_rejects_long_video(monkeypatch):
+def test_lyric_offset_finds_global_shift():
+    import numpy as np
+    rate, starts = 100, [5.0, 9.0, 14.0, 20.0, 27.0, 31.0]
+    env = np.zeros(40 * rate)
+    for s in starts:                                   # vocals enter 1.8 s after each LRC line start
+        a = int((s + 1.8) * rate)
+        env[a:a + 2 * rate] = 1.0
+    assert pipeline.lyric_offset(starts, env, rate) == pytest.approx(1.8, abs=0.05)
+    assert pipeline.lyric_offset([s + 3.0 for s in starts], env, rate) == pytest.approx(-1.2, abs=0.05)
+    assert pipeline.lyric_offset(starts, np.ones(40 * rate), rate) == 0.0      # no clear signal
+    noise = np.random.default_rng(0).random(40 * rate)
+    assert pipeline.lyric_offset(starts, noise, rate) == 0.0
+
+def test_run_rejects_long_video(monkeypatch, tmp_path):
+    monkeypatch.setattr(pipeline, "DATA", tmp_path)
     monkeypatch.setattr(pipeline, "video_info",
                         lambda vid: {"id": vid, "duration": 3600, "title": "mix", "artist": None, "track": None})
     with pytest.raises(pipeline.PipelineError, match="15 minutes"):

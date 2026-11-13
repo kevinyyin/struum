@@ -132,3 +132,15 @@ def test_build_rows_each_chord_only_change_appears_once_in_its_gap():
         "instrumental", "lyrics", "instrumental", "lyrics", "instrumental", "lyrics", "instrumental"]
     assert [[c["name"] for c in r["chords"]] for r in rows if r["type"] == "instrumental"] == [
         ["C"], ["G"], ["F"], ["D"]]
+
+def test_tempo_half_bar_downbeats_report_four():
+    beats = [i * 0.5 for i in range(16)]
+    assert sheet.tempo(beats, beats[::2]) == (120.0, 4)   # beat-this marks half-bars on slow 4/4
+
+def test_clean_chords_keeps_chord_over_missed_beat():
+    beats = [0.0, 0.5, 1.0, 2.0, 2.5, 3.0, 3.5]           # the beat at 1.5 was missed
+    segs = [{"start_time": 0.0, "end_time": 1.0, "chord": "C:maj"},
+            {"start_time": 1.0, "end_time": 2.0, "chord": "G:maj"},   # two beats long, one tracked
+            {"start_time": 2.0, "end_time": 3.5, "chord": "A:min"}]
+    assert sheet.clean_chords(segs, beats) == [
+        {"time": 0.0, "name": "C"}, {"time": 1.0, "name": "G"}, {"time": 2.0, "name": "Am"}]

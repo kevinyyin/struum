@@ -36,9 +36,12 @@ def clean_chords(segments: list[dict], beats: list[float]) -> list[dict]:
     changes = [(t, n) for t, n in changes if n]
     if len(beats) > 1:
         # Compare beat indices, not seconds: float jitter would drop exact two-beat chords.
-        idx = [(min(range(len(beats)), key=lambda i: abs(beats[i] - t)), n) for t, n in changes]
-        nxt = [i for i, _ in idx[1:]] + [float("inf")]
-        changes = [(beats[i], n) for (i, n), end in zip(idx, nxt) if end - i >= 2]
+        # Seconds still save a chord that spans a beat the tracker missed.
+        idx = [min(range(len(beats)), key=lambda i: abs(beats[i] - t)) for t, _ in changes]
+        nxt = list(zip(idx[1:], [t for t, _ in changes[1:]])) + [(float("inf"), float("inf"))]
+        long = 1.5 * _gap(beats)
+        changes = [(beats[i], n) for i, (t, n), (j, u) in zip(idx, changes, nxt)
+                   if j - i >= 2 or u - t >= long]
     out = []
     for t, n in changes:
         if not out or out[-1]["name"] != n:
@@ -51,7 +54,8 @@ def tempo(beats: list[float], downbeats: list[float]) -> tuple[float, int]:
         return 0.0, 4
     counts = Counter(
         sum(a <= b < c for b in beats) for a, c in zip(downbeats, downbeats[1:]))
-    return round(60 / _gap(beats), 1), counts.most_common(1)[0][0] if counts else 4
+    per_bar = counts.most_common(1)[0][0] if counts else 4
+    return round(60 / _gap(beats), 1), 4 if per_bar == 2 else per_bar  # beat-this marks half-bars in slow 4/4
 
 
 def suggest_strum(bpm: float, beats_per_bar: int) -> str:

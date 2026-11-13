@@ -64,6 +64,21 @@ def fill_word_times(words: list[dict], start: float, end: float) -> list[dict]:
             for i, (w, s) in enumerate(zip(words, starts))]
 
 
+def lyric_offset(starts: list[float], envelope, rate: float) -> float:
+    """Seconds to add to every LRC line start so the starts sit on rises in vocal energy; 0 if unclear."""
+    import numpy as np
+    w = int(0.5 * rate)
+    c = np.concatenate([[0.0], np.cumsum(np.pad(envelope, w, mode="edge"))])
+    i = np.arange(len(envelope)) + w                            # index into the padded envelope
+    rise = (c[i + w] - c[i]) - (c[i] - c[i - w])                # energy in the next half second minus the last
+    shifts = np.arange(-100, 101) * 0.05                        # within ±5 s
+    frames = np.clip(np.round((np.asarray(starts) + shifts[:, None]) * rate).astype(int), 0, len(rise) - 1)
+    score = rise[frames].mean(axis=1)
+    best = score.argmax()
+    # Peak in noise units of a mean over len(starts) lines: random starts stay under ~5, real lyrics reach 8-13.
+    return float(shifts[best]) if score[best] * np.sqrt(len(starts)) > 5 * rise.std() else 0.0
+
+
 def video_info(video_id: str) -> dict:
     import yt_dlp
     try:
@@ -138,6 +153,7 @@ def fetch_lyrics(artist: str, title: str, duration: float) -> list[dict] | None:
 
 
 def word_times(vocals: Path, lines: list[dict] | None) -> tuple[list[dict], str]:
+    import numpy as np
     import whisperx
     from whisperx.alignment import DEFAULT_ALIGN_MODELS_HF, DEFAULT_ALIGN_MODELS_TORCH
     from whisperx.audio import SAMPLE_RATE
@@ -152,6 +168,11 @@ def word_times(vocals: Path, lines: list[dict] | None) -> tuple[list[dict], str]
     if lines is None:
         segments = whisper.transcribe(audio, language=language)["segments"]
     else:
+        # Synced lyrics can sit a little early or late against this particular video: shift them as a whole.
+        frames = audio[: len(audio) // 160 * 160].reshape(-1, 160)  # 10 ms frames at 16 kHz
+        shift = lyric_offset([l["start"] for l in lines], np.log10((frames ** 2).mean(axis=1) + 1e-6), 100)
+        print(f"lyrics offset {shift:+.2f} s", file=sys.stderr)
+        lines = [{**l, "start": max(0.0, l["start"] + shift)} for l in lines]
         nexts = [l["start"] for l in lines[1:]] + [end]
         segments = [{"text": l["text"], "start": l["start"], "end": e} for l, e in zip(lines, nexts)]
     if language in DEFAULT_ALIGN_MODELS_TORCH or language in DEFAULT_ALIGN_MODELS_HF:
