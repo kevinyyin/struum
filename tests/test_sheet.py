@@ -137,10 +137,11 @@ def test_build_rows_each_chord_only_change_appears_once_in_its_gap():
     names = "CGFD"
     changes = [{"time": t, "name": n} for t, n in zip([0.0, 5.0, 20.0, 40.0], names)]
     rows = sheet.build_rows([ln(2.0, 3.0), ln(10.0, 11.0), ln(30.0, 31.0)], changes, 50.0)
-    assert [r["type"] for r in rows] == [
-        "instrumental", "lyrics", "instrumental", "lyrics", "instrumental", "lyrics", "instrumental"]
-    assert [[c["name"] for c in r["chords"]] for r in rows if r["type"] == "instrumental"] == [
-        ["C"], ["G"], ["F"], ["D"]]
+    # a lone gap change shows on the line it leads into (no echo row); the outro D keeps its row
+    assert [r["type"] for r in rows] == ["lyrics", "lyrics", "lyrics", "instrumental"]
+    shown = [c["name"] for r in rows for c in (r["chords"] if r["type"] == "instrumental"
+                                               else [c for w in r["words"] for c in w["chords"]])]
+    assert shown == ["C", "G", "F", "D"]  # each change still appears exactly once
 
 def test_tempo_half_bar_downbeats_report_four():
     beats = [i * 0.5 for i in range(16)]
@@ -153,3 +154,25 @@ def test_clean_chords_keeps_chord_over_missed_beat():
             {"start_time": 2.0, "end_time": 3.5, "chord": "A:min"}]
     assert sheet.clean_chords(segs, beats) == [
         {"time": 0.0, "name": "C"}, {"time": 1.0, "name": "G"}, {"time": 2.0, "name": "Am"}]
+
+
+def test_lone_gap_chord_that_the_next_line_repeats_gets_no_row_of_its_own():
+    line = lambda s, e, *ws: {"start": s, "end": e, "words": [{"text": w, "start": s + i * 0.3} for i, w in enumerate(ws)]}
+    lines = [line(0.0, 2.0, "one", "two"), line(5.0, 7.0, "three", "four")]
+    rows = sheet.build_rows(lines, [{"time": 0.0, "name": "C"}, {"time": 3.0, "name": "G"}], 9.0)
+    assert [r["type"] for r in rows] == ["lyrics", "lyrics"]  # the G before line two is not its own row
+    assert rows[1]["words"][0]["chords"][0]["name"] == "G"
+    # two chords in the gap are a real passage: kept
+    rows = sheet.build_rows(lines, [{"time": 0.0, "name": "C"}, {"time": 3.0, "name": "Am"}, {"time": 4.0, "name": "G"}], 9.0)
+    assert [r["type"] for r in rows] == ["lyrics", "instrumental", "lyrics"]
+    # a lone gap chord the next line does not start on is kept
+    rows = sheet.build_rows([line(0.0, 2.0, "one"), line(5.0, 7.0, "three", "four")],
+                      [{"time": 0.0, "name": "C"}, {"time": 3.0, "name": "G"}, {"time": 4.95, "name": "D"}], 9.0)
+    assert [r["type"] for r in rows] == ["lyrics", "instrumental", "lyrics"]
+
+
+def test_drop_echoes_on_saved_rows():
+    gap = {"type": "instrumental", "start": 3.0, "end": 5.0, "chords": [{"time": 3.0, "name": "G"}]}
+    lyric = {"type": "lyrics", "start": 5.0, "end": 7.0, "words": [{"text": "a", "start": 5.0, "chords": [{"name": "G", "time": 5.0}]}]}
+    assert sheet.drop_echoes([gap, lyric]) == [lyric]
+    assert sheet.drop_echoes([gap]) == [gap]  # outro: nothing after it

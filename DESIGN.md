@@ -11,7 +11,7 @@ colors:
   ink: "#2a1c13"
   ink-2: "#6f5643"
   ink-3: "#9a836e"
-  ink-4: "#b9a48f"
+  ink-4: "#b39e88"
   honey: "#e5bf80"
   honey-tint: "#f3e2c2"
   honey-line: "#e6cb9b"

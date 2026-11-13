@@ -104,7 +104,17 @@ def build_rows(lines: list[dict], changes: list[dict], duration: float) -> list[
                      "words": words})
     free.extend(loose)
     flush(duration)
-    return rows
+    return drop_echoes(rows)
+
+
+def drop_echoes(rows: list[dict]) -> list[dict]:
+    """Drop a chord-only row holding one chord that the next line starts on anyway: it would show the chord twice."""
+    def echo(row, nxt):
+        if row["type"] != "instrumental" or len(row["chords"]) != 1 or not nxt or nxt["type"] != "lyrics":
+            return False
+        first = nxt["words"][0]["chords"]
+        return bool(first) and first[0]["name"] == row["chords"][0]["name"]
+    return [r for r, nxt in zip(rows, rows[1:] + [None]) if not echo(r, nxt)]
 
 
 def _width(text: str) -> int:

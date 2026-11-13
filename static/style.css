@@ -3,7 +3,7 @@
 
 :root {
   --ground: #f6efe3; --paper: #fbf8f2; --line: #e6dac6; --line-soft: #efe6d6; --pill: #efe6d6; --pill-now: #eadfcb;
-  --ink: #2a1c13; --ink-2: #6f5643; --ink-3: #9a836e; --ink-4: #b9a48f;
+  --ink: #2a1c13; --ink-2: #6f5643; --ink-3: #9a836e; --ink-4: #b39e88;
   --honey: #e5bf80; --honey-tint: #f3e2c2; --honey-line: #e6cb9b; --rose: #5a3522;
   --teal: #2f6b6a; --teal-tint: #dbe9e4; --teal-line: #c4dbd3; --red: #a3412e;
   --abalone: conic-gradient(from 30deg, #2f6b6a, #77b5a9, #3d5378, #8f7bb5, #2f8f7f, #b9d7c4, #2f6b6a);
