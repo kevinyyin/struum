@@ -34,6 +34,10 @@ test("C and G keys spell borrowed chords as flats, E key keeps sharps", () => {
   assert.equal(shown0(["E", "A", "B", "C#m", "Abm", "E"]), "E A B C#m G#m E");
   assert.equal(shown0(["Bb", "F", "Gm", "Bb"]), "Bb F Gm Bb");
 });
+test("suggest handler pattern: transpose then suggestCapo", () => {
+  assert.equal(suggestCapo(["C", "G", "Am", "F"].map((n) => transpose(n, 0))), 5);
+  assert.equal(suggestCapo(["C", "G", "Am", "F"].map((n) => transpose(n, 2))), 7);
+});
 test("suggestCapo picks the fret with most open shapes", () => {
   assert.equal(suggestCapo(["C", "G", "Am", "Em"]), 0);
   assert.equal(suggestCapo(["E", "B", "C#m", "F#m"]), 4);   // plays as C G Am Dm

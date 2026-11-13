@@ -74,7 +74,7 @@ $("capo").addEventListener("input", refresh);
 $("reset").addEventListener("click", resetControls);
 $("suggest").addEventListener("click", () => {
   const t = transposeValue();
-  $("capo").value = suggestCapo(names().map((n) => transpose(n, t, false)));
+  $("capo").value = suggestCapo(names().map((n) => transpose(n, t)));
   refresh();
 });
 
