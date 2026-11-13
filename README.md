@@ -29,7 +29,7 @@ PATH=/opt/homebrew/bin:$PATH .venv/bin/uvicorn app:app --host 127.0.0.1 --port 8
 Open http://127.0.0.1:8000/ (use `127.0.0.1`, not `localhost`: Spotify only accepts the address you registered).
 
 - **Your songs** (sidebar and its own page) lists every saved sheet, newest first. A song that finished while you were elsewhere gets a teal dot until you open it.
-- **Spotify** has its own page (Recently played, Top tracks, Liked, plus a search box for any song on Spotify) and a quick list of three recent songs in the sidebar. Songs you already made say **Open sheet**; the rest say **Make sheet**.
+- **Spotify** has its own page: Recently played, your Spotify **Playlists** (open one to make sheets from its songs; Spotify only shares the songs of playlists you made or collaborate on), Top tracks, Liked, and a search box for any song on Spotify (10 results at a time, Spotify's limit for apps like this) and a quick list of three recent songs in the sidebar. Songs you already made say **Open sheet**; the rest say **Make sheet**.
 - Paste a YouTube link in the sidebar box for anything else.
 - One song is processed at a time; you can browse while it runs.
 - On a song: capo and transpose steppers, **Suggest capo**, chord diagrams and a suggested strum (tabs), and a floating player. The current line darkens and its chord turns teal.
@@ -53,7 +53,7 @@ node --test tests/*.mjs
 1. Create an app at https://developer.spotify.com/dashboard.
 2. Add the redirect URI exactly `http://127.0.0.1:8000/`, and enable the Web API. The page sends its own address as the redirect, so a hosted copy needs its address added here too.
 3. Put the app's client ID in `.env` as `SPOTIFY_CLIENT_ID`.
-4. Log in from the page. The account owner needs Premium for the app to work.
+4. Log in from the page. The account owner needs Premium for the app to work. If you logged in before playlists were added, log in once more so Strum can read them.
 
 The Liked tab hides itself if Spotify refuses it. A picked song is matched to a YouTube video by artist, title and duration. The login lasts for the browser tab (about an hour); after that the page asks you to log in again.
 

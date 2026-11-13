@@ -1,7 +1,7 @@
 import {startSong, findSong, isBusy, config, canMakeSongs, queuedAs, requestSong} from "/static/app.js";
 
 const REDIRECT = location.origin + "/"; // must match a redirect URI registered on the Spotify app
-const SCOPE = "user-read-recently-played user-top-read user-library-read";
+const SCOPE = "user-read-recently-played user-top-read user-library-read playlist-read-private playlist-read-collaborative";
 const LISTS = [
   ["Recently played", "/v1/me/player/recently-played?limit=50"],
   ["Top tracks", "/v1/me/top/tracks?limit=50"],
@@ -35,7 +35,10 @@ const msg = (s) => { $("sp-msg").textContent = s; };
 let clientId = "";
 let tabs = []; // [{name, tracks}]
 let tabIndex = 0;
-let found = null; // {query, tracks} while a search is showing, instead of a tab
+let found = null; // {query, tracks, more} while a search is showing, instead of a tab
+let openPl = null; // {pl, tracks | null, error | null} when one of your playlists is open
+const api = (path, opts = {}) => fetch("https://api.spotify.com" + path, {...opts, headers: {Authorization: `Bearer ${store.get("sp_token")}`}});
+const cover = (images) => (images?.filter((i) => (i.width ?? 64) >= 64).at(-1) ?? images?.at(-1))?.url ?? "";
 
 async function login() {
   const verifier = rand(), state = rand();
@@ -79,10 +82,7 @@ async function exchange(code) {
   store.set("sp_token", (await res.json()).access_token);
 }
 
-const artOf = (t) => {
-  const imgs = t.album?.images ?? []; // largest first
-  return (imgs.filter((i) => (i.width ?? 64) >= 64).at(-1) ?? imgs.at(-1))?.url ?? "";
-};
+const artOf = (t) => cover(t.album?.images); // largest first: the smallest that is still 64 px
 
 function art(t) {
   const img = el("img", "art");
@@ -124,23 +124,118 @@ function action(t) {
   return b;
 }
 
+const trackRow = (t) => {
+  const li = el("li", "item");
+  const b = action(t);
+  li.append(art(t), text(t), b);
+  li.onclick = () => { if (!b.disabled) pick(t); };
+  return li;
+};
+
 function drawList() {
   const list = $("sp-list");
-  const tracks = found ? found.tracks : tabs[tabIndex]?.tracks ?? [];
-  list.replaceChildren(...tracks.map((t) => {
-    const li = el("li", "item");
-    const b = action(t);
-    li.append(art(t), text(t), b);
-    li.onclick = () => { if (!b.disabled) pick(t); };
-    return li;
-  }));
-  if (found && !found.tracks.length) list.append(el("li", "empty", `No songs on Spotify match "${found.query}".`));
-  else if (!found && tabs[tabIndex] && !tabs[tabIndex].tracks.length) list.append(el("li", "empty", `Nothing in ${tabs[tabIndex].name} yet.`));
+  const tab = tabs[tabIndex];
   [...$("sp-tabs").children].forEach((b, i) => b.setAttribute("aria-selected", String(!found && i === tabIndex)));
+  if (!found && tab?.playlists !== undefined) return drawPlaylistsTab(tab);
+  const tracks = found ? found.tracks : tab?.tracks ?? [];
+  list.replaceChildren(...tracks.map(trackRow));
+  if (found && !found.tracks.length) list.append(el("li", "empty", `No songs on Spotify match "${found.query}".`));
+  else if (!found && tab && !tab.tracks.length) list.append(el("li", "empty", `Nothing in ${tab.name} yet.`));
+  if (found?.more) {
+    const b = el("button", "pill", "More results");
+    b.type = "button";
+    b.onclick = () => search(found.query, found.tracks.length);
+    const li = el("li", "more");
+    li.append(b);
+    list.append(li);
+  }
+}
+
+/* your Spotify playlists */
+
+function drawPlaylistsTab(tab) {
+  const list = $("sp-list");
+  if (tab.needsLogin) {
+    const li = el("li", "empty", "Strum needs one more Spotify permission to see your playlists. ");
+    const b = el("button", "pill honey", "Log in to Spotify again");
+    b.type = "button";
+    b.onclick = login;
+    li.append(el("br"), b);
+    return list.replaceChildren(li);
+  }
+  if (!openPl) {
+    list.replaceChildren(...tab.playlists.map((p) => {
+      const li = el("li", "item");
+      const img = el("img", "art");
+      img.alt = "";
+      const src = cover(p.images);
+      if (src.startsWith("https://")) img.src = src;
+      const t = el("div");
+      const n = (p.items ?? p.tracks)?.total ?? 0;
+      t.append(el("b", "", p.name), el("span", "who", `${n} ${n === 1 ? "song" : "songs"}${p.owner?.display_name ? ` · by ${p.owner.display_name}` : ""}`));
+      const b = el("button", "act", "Open");
+      b.type = "button";
+      li.append(img, t, b);
+      li.onclick = () => openPlaylist(p);
+      return li;
+    }));
+    if (!tab.playlists.length) list.append(el("li", "empty", "You don't have any Spotify playlists yet."));
+    return;
+  }
+  const head = el("li", "plhead");
+  const back = el("button", "pill", "← All playlists");
+  back.type = "button";
+  back.onclick = () => { openPl = null; drawList(); };
+  head.append(back, el("b", "", openPl.pl.name));
+  list.replaceChildren(head);
+  if (openPl.error) list.append(el("li", "empty", openPl.error));
+  else if (!openPl.tracks) list.append(el("li", "empty", "Loading the songs…"));
+  else {
+    list.append(...openPl.tracks.map(trackRow));
+    if (!openPl.tracks.length) list.append(el("li", "empty", "No songs in this playlist."));
+  }
+}
+
+async function openPlaylist(p) {
+  openPl = {pl: p, tracks: null, error: null};
+  drawList();
+  const tracks = [];
+  try {
+    // up to 300 songs, 50 at a time (Spotify's page size)
+    for (let offset = 0; offset < 300; offset += 50) {
+      const r = await api(`/v1/playlists/${encodeURIComponent(p.id)}/items?limit=50&offset=${offset}`);
+      if (r.status === 401) { store.del("sp_token"); return showLogin("Your Spotify login expired."); }
+      const page = r.ok ? await r.json() : null;
+      if (r.status === 403 || (page && !Array.isArray(page.items))) {
+        throw new Error("Spotify only lets Strum read the songs in playlists you made or collaborate on, not ones you follow.");
+      }
+      if (!r.ok) throw new Error("Spotify didn't send this playlist's songs. Try again in a moment.");
+      tracks.push(...page.items.map((i) => i.item ?? i.track).filter((t) => t?.type !== "episode" && t?.name));
+      if (!page.next) break;
+    }
+    if (openPl?.pl === p) openPl.tracks = dedupe(tracks);
+  } catch (e) {
+    if (openPl?.pl === p) openPl.error = e.message;
+  }
+  if (openPl?.pl === p) drawList();
+}
+
+async function loadPlaylists() {
+  const lists = [];
+  for (let offset = 0; offset < 200; offset += 50) {
+    const r = await api(`/v1/me/playlists?limit=50&offset=${offset}`);
+    if (r.status === 401) throw "expired";
+    if (r.status === 403) return {name: "Playlists", playlists: [], needsLogin: true}; // logged in before Strum asked for playlists
+    if (!r.ok) return null;
+    const page = await r.json();
+    lists.push(...(page.items ?? []).filter((p) => p?.id));
+    if (!page.next) break;
+  }
+  return {name: "Playlists", playlists: lists};
 }
 
 function drawQuick() {
-  const recent = tabs.find((t) => t.name === "Recently played") ?? tabs[0];
+  const recent = tabs.find((t) => t.name === "Recently played") ?? tabs.find((t) => t.tracks);
   $("sp-quick").replaceChildren(...(recent?.tracks ?? []).slice(0, 3).map((t) => {
     const li = el("li");
     const b = el("button", "song");
@@ -163,14 +258,16 @@ async function showLists() {
   $("sp-side-msg").textContent = "Loading your Spotify songs…";
   let results;
   try {
-    results = await Promise.all(LISTS.map(async ([name, path]) => {
+    results = await Promise.all([...LISTS.map(async ([name, path]) => {
       const r = await fetch("https://api.spotify.com" + path, {headers: {Authorization: `Bearer ${token}`}});
       if (r.status === 401) throw "expired";
       if (r.status === 403) return null; // e.g. liked songs refused: drop that tab
       if (!r.ok) throw new Error(r.status);
       const {items} = await r.json();
       return {name, tracks: dedupe(items.map((i) => i.track ?? i).filter((t) => t?.name))};
-    }));
+    }), loadPlaylists()]);
+    const pl = results.pop();
+    if (pl) results.splice(1, 0, pl);
   } catch (e) {
     if (e === "expired") { store.del("sp_token"); return showLogin("Your Spotify login expired."); }
     msg("Could not load your Spotify songs. Check your connection and reload.");
@@ -191,7 +288,7 @@ async function showLists() {
     const b = el("button", "", t.name);
     b.type = "button";
     b.setAttribute("role", "tab");
-    b.onclick = () => { tabIndex = i; found = null; $("sp-q").value = ""; drawList(); };
+    b.onclick = () => { tabIndex = i; found = null; openPl = null; $("sp-q").value = ""; drawList(); };
     return b;
   }));
   drawList();
@@ -200,14 +297,15 @@ async function showLists() {
 
 // Search all of Spotify as you type (a short pause first, and only the latest answer is shown).
 let searchTimer = 0, searchAbort = null;
-async function search(query) {
+// Spotify allows development-mode apps 10 results per search; "More results" asks for the next 10.
+async function search(query, offset = 0) {
   searchAbort?.abort();
   if (!query) { found = null; drawList(); return; }
   searchAbort = new AbortController();
   let r;
   try {
-    r = await fetch("https://api.spotify.com/v1/search?" + new URLSearchParams({q: query, type: "track", limit: "30"}),
-      {headers: {Authorization: `Bearer ${store.get("sp_token")}`}, signal: searchAbort.signal});
+    r = await api("/v1/search?" + new URLSearchParams({q: query, type: "track", limit: "10", offset: String(offset)}),
+      {signal: searchAbort.signal});
   } catch (e) {
     if (e.name !== "AbortError") msg("Could not reach Spotify. Check your connection.");
     return;
@@ -215,7 +313,9 @@ async function search(query) {
   if (r.status === 401) { store.del("sp_token"); return showLogin("Your Spotify login expired."); }
   if (!r.ok) return msg("Spotify search didn't work just now. Try again in a moment.");
   msg("");
-  found = {query, tracks: dedupe(((await r.json()).tracks?.items ?? []).filter((t) => t?.name))};
+  const page = (await r.json()).tracks ?? {};
+  const fresh = (page.items ?? []).filter((t) => t?.name);
+  found = {query, tracks: dedupe([...(offset ? found?.tracks ?? [] : []), ...fresh]), more: !!page.next && offset + 10 < 50};
   drawList();
 }
 $("sp-q").addEventListener("input", () => {
