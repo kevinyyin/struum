@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-13T00:00:00Z",
+  "generatedAt": "2026-11-13T12:00:00Z",
   "title": "Design System: Strum",
   "extensions": {
     "colorMeta": {
@@ -286,44 +286,112 @@
           "#2f8f7f",
           "#b9d7c4"
         ]
+      },
+      "error-band": {
+        "role": "neutral",
+        "displayName": "Error Band",
+        "canonical": "#f6e2da",
+        "tonalRamp": [
+          "#140804",
+          "#30211b",
+          "#4e3e38",
+          "#6e5d56",
+          "#907e77",
+          "#b3a099",
+          "#d8c4bd",
+          "#feeae2"
+        ]
+      },
+      "error-ring": {
+        "role": "neutral",
+        "displayName": "Error Ring",
+        "canonical": "#ecc9bd",
+        "tonalRamp": [
+          "#190401",
+          "#371d15",
+          "#563a31",
+          "#77594f",
+          "#9a7a6f",
+          "#be9d91",
+          "#e3c0b4",
+          "#ffe6d9"
+        ]
       }
     },
     "typographyMeta": {
+      "numeral": {
+        "displayName": "Numeral",
+        "purpose": "The tuner's note name inside the dial."
+      },
       "display": {
         "displayName": "Display",
         "purpose": "Page and song titles (h1)."
       },
-      "title": {
-        "displayName": "Title",
-        "purpose": "Song names in lists; tabs and sheet section labels at 12.5px."
+      "display-narrow": {
+        "displayName": "Display Narrow",
+        "purpose": "Titles at 760px and below."
       },
-      "body": {
-        "displayName": "Body",
-        "purpose": "UI text, meta lines, notes, hints."
+      "pattern": {
+        "displayName": "Pattern",
+        "purpose": "The strumming pattern line."
       },
       "lyric": {
         "displayName": "Lyric",
-        "purpose": "Sheet rows; 400 weight on the current line; Chinese falls back to PingFang/Hiragino."
+        "purpose": "Sheet rows; 400 weight on the current line; Chinese falls back to PingFang/Hiragino. Phone text fields also sit at 16px."
+      },
+      "touch-option": {
+        "displayName": "Touch Option",
+        "purpose": "Menu options in the phone bottom sheet."
+      },
+      "title-lg": {
+        "displayName": "Title Large",
+        "purpose": "Playlist header row, tuner reading, edit-bar input, large playlist tile, touch tabs."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Song names in lists."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "UI text, meta lines, notes, hints; touch pills."
+      },
+      "small": {
+        "displayName": "Small",
+        "purpose": "Sidebar song names, tabs, sheet section labels, context bar, menu options, big pills."
+      },
+      "meta": {
+        "displayName": "Meta",
+        "purpose": "Artists in lists, chord-diagram names, the add slot."
       },
       "label": {
         "displayName": "Label",
-        "purpose": "Pills, buttons, timestamps, sidebar group headings."
+        "purpose": "Pills, buttons, timestamps, sidebar group headings, edit-bar chips."
       },
       "chord": {
         "displayName": "Chord",
-        "purpose": "Chord names inside chord pills."
+        "purpose": "Chord names inside chord pills; phone tab-bar labels."
       }
     },
     "shadows": [
       {
         "name": "float",
         "value": "0 0 0 1px #e6dac6, 0 16px 36px -18px rgb(70 40 15 / 0.35)",
-        "purpose": "Floating player."
+        "purpose": "Floating player and the edit bar in its place."
+      },
+      {
+        "name": "menu",
+        "value": "0 0 0 1px #e6dac6, 0 14px 30px -14px rgb(70 40 15 / 0.35)",
+        "purpose": "Add to playlist dropdown and phone bottom sheet."
       },
       {
         "name": "disc",
         "value": "0 0 0 3px #fbf8f2, 0 0 0 4px #e6dac6, 0 18px 34px -16px rgb(70 40 15 / 0.45)",
-        "purpose": "Processing rosette disc."
+        "purpose": "Processing rosette disc; the tuner dial uses 4px / 5px rings."
+      },
+      {
+        "name": "tuned",
+        "value": "0 0 0 4px #fbf8f2, 0 0 0 7px #2f6b6a, 0 18px 34px -12px rgb(47 107 106 / 0.6)",
+        "purpose": "Tuner dial when the string is in tune."
       },
       {
         "name": "now-lift",
@@ -353,9 +421,19 @@
         "purpose": "Chord pill to/from now."
       },
       {
+        "name": "needle",
+        "value": ".15s",
+        "purpose": "Tuner needle travel."
+      },
+      {
+        "name": "dial",
+        "value": ".3s",
+        "purpose": "Tuner dial ring and idle fade."
+      },
+      {
         "name": "control",
         "value": ".2s",
-        "purpose": "Play press, timeline hover."
+        "purpose": "Play press, timeline hover, string chip state."
       },
       {
         "name": "rosette-turn",
@@ -372,6 +450,10 @@
       {
         "name": "narrow",
         "value": "760px"
+      },
+      {
+        "name": "touch",
+        "value": "(pointer: coarse)"
       }
     ]
   },
@@ -447,32 +529,56 @@
       "description": "Turning abalone rosette disc and five in-place step bars.",
       "html": "<div class=\"ds-job\"><div class=\"ds-disc\"></div><ol class=\"ds-steps\"><li class=\"done\"></li><li class=\"done\"></li><li class=\"now\"></li><li></li><li></li></ol></div>",
       "css": ":host{--ground:#f6efe3;--paper:#fbf8f2;--line:#e6dac6;--line-soft:#efe6d6;--pill:#efe6d6;--pill-now:#eadfcb;--ink:#2a1c13;--ink-2:#6f5643;--ink-3:#9a836e;--ink-4:#b39e88;--honey:#e5bf80;--honey-tint:#f3e2c2;--honey-line:#e6cb9b;--rose:#5a3522;--teal:#2f6b6a;--teal-tint:#dbe9e4;--teal-line:#c4dbd3;--abalone:conic-gradient(from 30deg,#2f6b6a,#77b5a9,#3d5378,#8f7bb5,#2f8f7f,#b9d7c4,#2f6b6a);--ui:'Schibsted Grotesk',system-ui,sans-serif;--lyric:'Hanken Grotesk','PingFang SC',sans-serif;--ease:cubic-bezier(.16,1,.3,1);} .ds-job{width:300px;} .ds-disc{width:112px;height:112px;border-radius:50%;background:radial-gradient(circle,var(--ink) 0 34px,var(--paper) 34px 36px,var(--ink) 36px 37.5px,transparent 37.5px),var(--abalone);box-shadow:0 0 0 3px var(--paper),0 0 0 4px var(--line),0 18px 34px -16px rgb(70 40 15 / .45);animation:ds-turn 9s linear infinite;} .ds-steps{list-style:none;padding:0;display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:26px;} .ds-steps li{height:6px;border-radius:3px;background:var(--line);} .ds-steps li.done{background:var(--teal);} .ds-steps li.now{background:var(--honey);animation:ds-breathe 1.6s var(--ease) infinite;} @keyframes ds-turn{to{rotate:1turn;}} @keyframes ds-breathe{50%{opacity:.45;}} @media (prefers-reduced-motion:reduce){.ds-disc,.ds-steps li{animation:none;}}"
+    },
+    {
+      "name": "Chord Editing",
+      "kind": "custom",
+      "refersTo": "chord-pill-edit",
+      "description": "Edit mode: outlined, changed and selected chord pills, a dashed add slot, and chips from the edit bar.",
+      "html": "<div class=\"ds-ed\"><span class=\"ds-c\">G</span> <span class=\"ds-c ds-changed\">Em7</span> <span class=\"ds-c ds-sel\">C</span> <button class=\"ds-add\" aria-label=\"Add chord\">+</button></div><div class=\"ds-chips\"><button>Am</button><button>D</button><button>F</button></div>",
+      "css": ":host{--ground:#f6efe3;--paper:#fbf8f2;--line:#e6dac6;--line-soft:#efe6d6;--pill:#efe6d6;--pill-now:#eadfcb;--ink:#2a1c13;--ink-2:#6f5643;--ink-3:#9a836e;--ink-4:#b39e88;--honey:#e5bf80;--honey-tint:#f3e2c2;--honey-line:#e6cb9b;--rose:#5a3522;--teal:#2f6b6a;--teal-tint:#dbe9e4;--teal-line:#c4dbd3;--abalone:conic-gradient(from 30deg,#2f6b6a,#77b5a9,#3d5378,#8f7bb5,#2f8f7f,#b9d7c4,#2f6b6a);--ui:'Schibsted Grotesk',system-ui,sans-serif;--lyric:'Hanken Grotesk','PingFang SC',sans-serif;--ease:cubic-bezier(.16,1,.3,1);} .ds-ed{display:flex;gap:6px;align-items:center;font:13px var(--ui);} .ds-c{display:inline-block;font:600 11px/1 var(--ui);padding:5px 7px;border-radius:7px;background:var(--paper);color:var(--ink-2);box-shadow:inset 0 0 0 1px var(--ink-4);cursor:pointer;} .ds-changed{background:var(--honey-tint);color:var(--rose);box-shadow:inset 0 0 0 1.5px var(--honey);} .ds-sel{background:var(--teal);color:var(--paper);box-shadow:none;} .ds-add{border:0;font:600 12px/1 var(--ui);padding:5px 8px;border-radius:7px;background:transparent;color:var(--ink-3);outline:1px dashed var(--ink-4);outline-offset:-1px;cursor:pointer;} .ds-add:focus-visible{outline:2px solid var(--teal);outline-offset:2px;} .ds-chips{display:flex;gap:5px;margin-top:10px;} .ds-chips button{border:0;font:600 11.5px/1 var(--ui);padding:6px 8px;border-radius:7px;background:var(--pill);color:var(--ink-2);cursor:pointer;} .ds-chips button:hover{background:var(--pill-now);color:var(--rose);} .ds-chips button:focus-visible{outline:2px solid var(--teal);outline-offset:2px;}"
+    },
+    {
+      "name": "Add to Playlist Menu",
+      "kind": "custom",
+      "refersTo": "menu",
+      "description": "Paper dropdown (a bottom sheet on phones) with checkbox options; teal tick when the song is in that playlist.",
+      "html": "<div class=\"ds-menu\" role=\"menu\"><button class=\"ds-opt\" role=\"menuitemcheckbox\" aria-checked=\"true\"><span class=\"ds-check\"><svg width=\"10\" height=\"10\" viewBox=\"0 0 10 10\"><path d=\"M2 5.2l2 2L8 3\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg></span>Warm-up</button><button class=\"ds-opt\" role=\"menuitemcheckbox\" aria-checked=\"false\"><span class=\"ds-check\"></span>Campfire</button></div>",
+      "css": ":host{--ground:#f6efe3;--paper:#fbf8f2;--line:#e6dac6;--line-soft:#efe6d6;--pill:#efe6d6;--pill-now:#eadfcb;--ink:#2a1c13;--ink-2:#6f5643;--ink-3:#9a836e;--ink-4:#b39e88;--honey:#e5bf80;--honey-tint:#f3e2c2;--honey-line:#e6cb9b;--rose:#5a3522;--teal:#2f6b6a;--teal-tint:#dbe9e4;--teal-line:#c4dbd3;--abalone:conic-gradient(from 30deg,#2f6b6a,#77b5a9,#3d5378,#8f7bb5,#2f8f7f,#b9d7c4,#2f6b6a);--ui:'Schibsted Grotesk',system-ui,sans-serif;--lyric:'Hanken Grotesk','PingFang SC',sans-serif;--ease:cubic-bezier(.16,1,.3,1);} .ds-menu{width:230px;background:var(--paper);border-radius:12px;padding:6px;display:grid;gap:1px;box-shadow:0 0 0 1px var(--line),0 14px 30px -14px rgb(70 40 15 / .35);font:13px var(--ui);color:var(--ink);} .ds-opt{display:flex;align-items:center;gap:9px;width:100%;border:0;background:none;padding:7px 8px;border-radius:8px;font:500 12.5px var(--ui);color:inherit;text-align:left;cursor:pointer;} .ds-opt:hover,.ds-opt:focus-visible{background:var(--line-soft);outline:none;} .ds-check{width:16px;height:16px;border-radius:5px;box-shadow:inset 0 0 0 1.5px var(--ink-4);display:grid;place-items:center;flex:none;color:var(--paper);} [aria-checked=true] .ds-check{background:var(--teal);box-shadow:none;}"
+    },
+    {
+      "name": "Tuner",
+      "kind": "custom",
+      "refersTo": "tuner-dial",
+      "description": "Rosette dial with the note, cents meter with needle, six string chips (honey heard, teal in tune).",
+      "html": "<div class=\"ds-tuner\"><div class=\"ds-dial ds-ok\"><span>A</span></div><div class=\"ds-meter\"><i style=\"transform:translateX(12px)\"></i></div><ol class=\"ds-strings\"><li>E</li><li class=\"ds-ok\">A</li><li class=\"ds-on\">D</li><li>G</li><li>B</li><li>e</li></ol></div>",
+      "css": ":host{--ground:#f6efe3;--paper:#fbf8f2;--line:#e6dac6;--line-soft:#efe6d6;--pill:#efe6d6;--pill-now:#eadfcb;--ink:#2a1c13;--ink-2:#6f5643;--ink-3:#9a836e;--ink-4:#b39e88;--honey:#e5bf80;--honey-tint:#f3e2c2;--honey-line:#e6cb9b;--rose:#5a3522;--teal:#2f6b6a;--teal-tint:#dbe9e4;--teal-line:#c4dbd3;--abalone:conic-gradient(from 30deg,#2f6b6a,#77b5a9,#3d5378,#8f7bb5,#2f8f7f,#b9d7c4,#2f6b6a);--ui:'Schibsted Grotesk',system-ui,sans-serif;--lyric:'Hanken Grotesk','PingFang SC',sans-serif;--ease:cubic-bezier(.16,1,.3,1);} .ds-tuner{display:grid;justify-items:center;gap:18px;width:420px;font:13px var(--ui);} .ds-dial{width:168px;height:168px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle,var(--ink) 0 62px,var(--paper) 62px 65px,transparent 65px),var(--abalone);box-shadow:0 0 0 4px var(--paper),0 0 0 5px var(--line),0 18px 34px -16px rgb(70 40 15 / .45);transition:box-shadow .3s var(--ease);} .ds-dial.ds-ok{box-shadow:0 0 0 4px var(--paper),0 0 0 7px var(--teal),0 18px 34px -12px rgb(47 107 106 / .6);} .ds-dial span{color:var(--paper);font-weight:800;font-size:54px;letter-spacing:-.03em;line-height:1;} .ds-meter{position:relative;width:100%;height:46px;border-radius:12px;background:linear-gradient(var(--teal-tint),var(--teal-tint)) center / 10% 100% no-repeat,repeating-linear-gradient(90deg,var(--line) 0 1px,transparent 1px 10%) 0 50% / 100% 40% no-repeat,var(--paper);box-shadow:inset 0 0 0 1px var(--line);} .ds-meter::after{content:'';position:absolute;left:calc(50% - 1px);top:6px;bottom:6px;width:2px;border-radius:1px;background:var(--teal);opacity:.5;} .ds-meter i{position:absolute;left:calc(50% - 2px);top:4px;bottom:4px;width:4px;border-radius:2px;background:var(--teal);z-index:1;transition:transform .15s var(--ease);} .ds-strings{list-style:none;padding:0;margin:0;display:flex;gap:6px;} .ds-strings li{width:36px;height:32px;border-radius:9px;display:grid;place-items:center;font-weight:700;font-size:13px;background:var(--paper);box-shadow:inset 0 0 0 1px var(--line);color:var(--ink-2);} .ds-strings li.ds-on{background:var(--honey-tint);box-shadow:inset 0 0 0 1px var(--honey-line);color:var(--rose);} .ds-strings li.ds-ok{background:var(--teal);box-shadow:none;color:var(--paper);}"
     }
   ],
   "narrative": {
     "northStar": "Spruce Top & Rosette",
-    "overview": "The sheet is a quiet spruce-and-cream room where only the sung line and its playing chord carry colour. Everything is built from the materials of an acoustic guitar: a cream spruce ground, paper surfaces, rosewood ink, honey from the top's finish, and an abalone rosette that rings the play control and the processing disc. It refuses the chord site's dense monospace grid and its wall of toolbars.\n\nOwner-pinned (2026-11-13): the Spruce Top & Rosette colours (cream ground, rosewood ink, honey for capo and loop, abalone teal for \"now\", abalone rosette ring), with the lightness of the Strum iOS app: small refined type, light pale lyrics with wide word gaps, borderless soft chord pills, and a floating player. Earlier, larger previews read as \"clunky, big, out of space\"; the system stays small and airy because of that. The owner also rejects a techy look (dark dashboard, neon), a busy look (panels competing with the sheet) and a plain look (generic web app with no guitar feel).\n\nDensity is low and the type is small: 13px UI, 11-11.5px labels, 16px light lyrics. Hierarchy comes from tone, not size. Upcoming lines sit pale; the current line darkens to ink; its playing chord alone turns teal.",
+    "overview": "**Creative North Star: \"Spruce Top & Rosette\"**\n\nThe sheet is a quiet spruce-and-cream room where only the sung line and its playing chord carry colour. Everything is built from the materials of an acoustic guitar: a cream spruce ground, paper surfaces, rosewood ink, honey from the top's finish, and an abalone rosette that rings the play control, the processing disc, the tuner dial and the home-screen icon. It refuses the chord site's dense monospace grid and its wall of toolbars.\n\nOwner-pinned (2026-11-13): the Spruce Top & Rosette colours (cream ground, rosewood ink, honey for capo and loop, abalone teal for \"now\", abalone rosette ring), with the lightness of the Strum iOS app: small refined type, light pale lyrics with wide word gaps, borderless soft chord pills, and a floating player. Earlier, larger previews read as \"clunky, big, out of space\"; the system stays small and airy because of that. The owner also rejects a techy look (dark dashboard, neon), a busy look (panels competing with the sheet) and a plain look (generic web app with no guitar feel).\n\nDensity is low and the type is small: 13px UI, 11-11.5px labels, 16px light lyrics. Hierarchy comes from tone, not size. Upcoming lines sit pale; the current line darkens to ink; its playing chord alone turns teal. Later surfaces (playlists, tuner, chord editing, Spotify search, the phone layout) reuse the same materials rather than adding new ones; the only size jump is the tuner's note, which is read from arm's length.",
     "keyCharacteristics": [
       "Cream ground, paper surfaces, rosewood ink in four steps, warm 1px hairlines.",
-      "Two accents with fixed jobs: honey means capo and loop, abalone teal means \"now\".",
-      "The abalone rosette ring is the only decorative device; it marks play and processing.",
+      "Two accents with fixed jobs: honey means capo, loop and the thing in hand; abalone teal means \"now\", done and right.",
+      "The abalone rosette ring is the only decorative device; it marks play, processing, tuning and the app itself.",
       "Light, pale lyrics with wide word gaps; small borderless chord pills above words.",
-      "A floating rounded player at bottom centre; no toolbars."
+      "One floating rounded bar at bottom centre (the player, or the edit bar in its place); no toolbars."
     ],
     "rules": [
       {
         "name": "The Two Jobs Rule",
-        "body": "Honey means capo and loop; teal means \"now\". Never swap them, and never use either as decoration.",
+        "body": "Honey means capo, loop and the thing in hand (primary action, work in progress, an edited chord, the string being played); teal means now, done and right. Never swap them, and never use either as decoration.",
         "section": "colors"
       },
       {
         "name": "The One Coloured Chord Rule",
-        "body": "At most one chord on the sheet is teal at any moment: the one sounding now.",
+        "body": "At most one chord on the sheet is teal at any moment: the one sounding now, or in edit mode the one selected.",
         "section": "colors"
       },
       {
         "name": "The Small Type Rule",
-        "body": "Nothing but titles exceeds 17px. Hierarchy comes from weight and ink step, not size.",
+        "body": "Nothing but titles and the tuner's note exceeds 17px. Hierarchy comes from weight and ink step, not size.",
         "section": "typography"
       },
       {
@@ -482,23 +588,24 @@
       },
       {
         "name": "The Only Things That Float Rule",
-        "body": "Only the player, the processing disc and the sounding chord carry a drop shadow.",
+        "body": "Only the floating bar (player or edit bar), the playlist menu, the rosette discs (processing and tuner) and the sounding chord carry a drop shadow.",
         "section": "elevation"
       }
     ],
     "dos": [
-      "**Do** keep honey for capo and loop and teal for \"now\" (The Two Jobs Rule).",
-      "**Do** keep type small: 13px UI, 11-11.5px labels, 16px light lyrics, 26px titles.",
-      "**Do** draw hairlines as 1px `line` / `line-soft` and float only the player, disc and sounding chord.",
-      "**Do** use the abalone rosette only for play, the brand mark and processing.",
-      "**Do** draw icons as inline stroked SVG (1.4-1.8px strokes, round caps)."
+      "**Do** keep honey for capo, loop and the thing in hand, and teal for now, done and right (The Two Jobs Rule).",
+      "**Do** keep type small: 13px UI, 11-11.5px labels, 16px light lyrics, 26px titles (24px on phones); only the tuner note is large.",
+      "**Do** draw hairlines as 1px `line` / `line-soft` and float only the player or edit bar, the menu, the rosette discs and the sounding chord.",
+      "**Do** use the abalone rosette only for play, the brand mark, processing, the tuner dial and the app icon.",
+      "**Do** draw icons as inline stroked SVG (1.4-1.8px strokes, round caps).",
+      "**Do** grow targets under `(pointer: coarse)` and keep phone text fields at 16px."
     ],
     "donts": [
-      "**Don't** give chord pills borders or make them bigger: they stay borderless, 11px, 7px radius.",
-      "**Don't** add toolbars or panels around the sheet; controls live in the pill row and the floating player.",
+      "**Don't** give chord pills borders or make them bigger while playing: they stay borderless, 11px, 7px radius. Only edit mode outlines them (an inset ring) and, on touch, enlarges them.",
+      "**Don't** add toolbars or panels around the sheet; controls live in the pill row and one floating bar (player or edit bar, never both).",
       "**Don't** go dark, neon or dashboard-like; don't add a monospace chord grid.",
       "**Don't** copy the Strum app's logo, name styling or assets.",
-      "**Don't** invent logos, illustrations or photography; album art comes from the song source only."
+      "**Don't** invent logos, illustrations or photography; album art comes from the song source only, and the app icon is the rosette."
     ]
   }
 }

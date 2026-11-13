@@ -1,4 +1,4 @@
-import {startSong, findSong, isBusy, config, canMakeSongs, queuedAs, requestSong} from "/static/app.js";
+import {startSong, findSong, isBusy, config, canMakeSongs, queuedAs, requestSong, svg} from "/static/app.js";
 
 const REDIRECT = location.origin + "/"; // must match a redirect URI registered on the Spotify app
 const SCOPE = "user-read-recently-played user-top-read user-library-read playlist-read-private playlist-read-collaborative";
@@ -183,7 +183,8 @@ function drawPlaylistsTab(tab) {
     return;
   }
   const head = el("li", "plhead");
-  const back = el("button", "pill", "← All playlists");
+  const back = el("button", "pill");
+  back.append(svg("back"), "All playlists");
   back.type = "button";
   back.onclick = () => { openPl = null; drawList(); };
   head.append(back, el("b", "", openPl.pl.name));

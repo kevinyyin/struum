@@ -194,8 +194,8 @@ let playlists = [], plEtag = null;
 let inList = null; // the playlist the open song was opened from
 let shownPl = null; // the playlist page's id
 let autoplay = false; // set when a playlist moves on to its next song
-const ICON = {up: `<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 7.5 6 4.5l3 3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`, down: `<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5 6 7.5l3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`, x: `<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M3.5 3.5l5 5m0-5-5 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`, check: `<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 5.2 4.2 7.4 8 2.8" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>`};
-const svg = (name) => { const s = el("span"); s.innerHTML = ICON[name]; return s.firstChild; }; // fixed markup only
+const ICON = {plus: `<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 2.5v7M2.5 6h7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`, back: `<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M7.5 3 4.5 6l3 3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`, up: `<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 7.5 6 4.5l3 3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`, down: `<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5 6 7.5l3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`, x: `<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M3.5 3.5l5 5m0-5-5 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`, check: `<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 5.2 4.2 7.4 8 2.8" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>`};
+export const svg = (name) => { const s = el("span"); s.innerHTML = ICON[name]; return s.firstChild; }; // fixed markup only
 const plById = (id) => playlists.find((p) => p.id === id);
 const songById = (id) => library.find((s) => s.video_id === id);
 const listSongs = (p) => p.songs.filter((id) => songById(id));
@@ -828,7 +828,8 @@ function drawRows(data) {
       div.classList.add("inst");
       row.chords.forEach((c, k) => div.append(chordFor(c, i, null, k)));
       if (editing) {
-        const add = el("button", "chord add", "+");
+        const add = el("button", "chord add");
+        add.append(svg("plus"));
         add.type = "button";
         add.setAttribute("aria-label", "Add a chord to this row");
         add.onclick = (e) => { e.stopPropagation(); selectSlot(i, null, row.chords.length); };
