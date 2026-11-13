@@ -75,3 +75,9 @@ test("a write that lost a race reads again instead of overwriting", async () => 
   await enqueue({ ...song, title: "Mine" }, io);
   assert.deepEqual(io.raw().map((x) => x.title).sort(), ["Mine", "Racer", "Sofia"]);
 });
+
+test("a weak ETag from a compressed read still allows the conditional write", async () => {
+  const { loadJson } = await import("../api/_blobjson.js");
+  const io = { get: async () => ({ statusCode: 200, stream: new Blob(["[1]"]).stream(), blob: { etag: 'W/"abc123"' } }) };
+  assert.deepEqual(await loadJson("x.json", io), { value: [1], etag: '"abc123"' });
+});

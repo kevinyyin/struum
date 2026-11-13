@@ -9,7 +9,9 @@ export async function loadJson(path, io = blob) {
   let r;
   try { r = await io.get(path, {access: "private", useCache: false}); } catch { r = null; }
   if (r?.statusCode !== 200) return {value: null, etag: null};
-  try { return {value: JSON.parse(await new Response(r.stream).text()), etag: r.blob.etag}; } catch { return {value: null, etag: r.blob.etag}; }
+  // A compressed read reports a weak ETag (W/"…"); the conditional write only accepts the plain one.
+  const etag = r.blob.etag?.replace(/^W\//, "") ?? null;
+  try { return {value: JSON.parse(await new Response(r.stream).text()), etag}; } catch { return {value: null, etag}; }
 }
 
 // Returns the new ETag. Throws (isConflict) when the document changed since `etag` was read.
