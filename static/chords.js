@@ -8,8 +8,17 @@ const PARSE = /^([A-G][#b]?)(.*?)(?:\/([A-G][#b]?))?$/;
 export function transpose(name, semitones, scale = SHARP) {
   const m = PARSE.exec(name);
   if (!m) return name;
-  const move = (n) => scale[(idx(n) + semitones % 12 + 12) % 12];
-  return move(m[1]) + m[2] + (m[3] ? "/" + move(m[3]) : "");
+  const at = (n) => (idx(n) + semitones % 12 + 12) % 12;
+  const root = scale[at(m[1])];
+  return root + m[2] + (m[3] ? "/" + bassName(root, at(m[3]), scale) : "");
+}
+
+// A bass that is the chord's third or fifth keeps that letter (E/G#, not E/Ab), whatever the key table says.
+function bassName(root, b, scale) {
+  const step = {3: 2, 4: 2, 7: 4}[(b - idx(root) + 12) % 12];
+  if (!step) return scale[b];
+  const letter = "CDEFGAB"[("CDEFGAB".indexOf(root[0]) + step) % 7];
+  return [SHARP[b], FLAT[b]].find((n) => n[0] === letter) ?? scale[b];
 }
 
 // Spelling table for the estimated key: flat keys FLAT, C/G/D (and relative minors) MIXED, the rest SHARP. Tonic = most frequent chord, ties to the earliest.

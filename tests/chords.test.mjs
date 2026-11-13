@@ -34,6 +34,13 @@ test("C and G keys spell borrowed chords as flats, E key keeps sharps", () => {
   assert.equal(shown0(["E", "A", "B", "C#m", "Abm", "E"]), "E A B C#m G#m E");
   assert.equal(shown0(["Bb", "F", "Gm", "Bb"]), "Bb F Gm Bb");
 });
+test("slash bass that is the chord's third or fifth keeps its letter", () => {
+  assert.equal(shown0(["D", "A", "E/Ab", "D"]), "D A E/G# D");      // seen on a real song: tonic D, bass is E's third
+  assert.equal(shown0(["C", "E/Ab", "Am", "C"]), "C E/G# Am C");
+  assert.equal(shown0(["C", "Db/Ab", "C"]), "C C#/G# C");           // fifth follows the root's letter
+  assert.equal(shown0(["Bb", "F", "Bb", "F/A", "Gb/Bb"]), "Bb F Bb F/A Gb/Bb");
+  assert.equal(transpose("C/E", 2), "D/F#");
+});
 test("suggest handler pattern: transpose then suggestCapo", () => {
   assert.equal(suggestCapo(["C", "G", "Am", "F"].map((n) => transpose(n, 0))), 5);
   assert.equal(suggestCapo(["C", "G", "Am", "F"].map((n) => transpose(n, 2))), 7);
