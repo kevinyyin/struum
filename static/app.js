@@ -1,5 +1,6 @@
 import {SHARP, transpose, spelling, suggestCapo, findFingering, diagramSvg} from "/static/chords.js";
 import {tidy} from "/static/tidy.js";
+import {listen, STRINGS, IN_TUNE} from "/static/tuner.js";
 
 export const current = {sheet: null, shift: 0};
 
@@ -415,9 +416,66 @@ $("add-pl").onclick = () => {
 document.addEventListener("click", (e) => { if (!e.target.closest(".addpl")) closeMenu(); });
 document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("pl-menu").hidden) { closeMenu(); $("add-pl").focus(); } });
 
+/* ---------- tuner ---------- */
+
+const label = (s) => (s.octave === 4 ? "e" : s.name); // guitarists' shorthand: high e
+$("tn-strings").replaceChildren(...STRINGS.map((s) => {
+  const x = el("li", "", label(s));
+  x.title = `${s.name}${s.octave} · ${s.freq} Hz`;
+  return x;
+}));
+let stopTuning = null;
+
+function showReading(r) {
+  const dial = $("tn-dial"), meter = $("tn-meter"), strings = [...$("tn-strings").children];
+  const idle = !r, ok = r && Math.abs(r.cents) <= IN_TUNE;
+  dial.classList.toggle("idle", idle);
+  dial.classList.toggle("ok", !!ok);
+  meter.classList.toggle("idle", idle);
+  meter.classList.toggle("ok", !!ok);
+  strings.forEach((x, i) => {
+    const on = r && STRINGS[i] === STRINGS.find((s) => s.freq === r.string.freq);
+    x.classList.toggle("on", !!on && !ok);
+    x.classList.toggle("ok", !!on && !!ok);
+  });
+  if (idle) { $("tn-read").textContent = "Listening… play one string."; return; }
+  $("tn-note").textContent = label(r.string);
+  const off = clamp(r.cents, -50, 50);
+  $("tn-needle").style.transform = `translateX(${(off / 50) * (meter.clientWidth / 2 - 6)}px)`;
+  const read = $("tn-read");
+  read.replaceChildren();
+  const c = Math.round(Math.abs(r.cents));
+  if (ok) read.append(el("b", "", "In tune"), ` · ${label(r.string)} string`);
+  else read.append(el("b", "", `${c} cents ${r.cents < 0 ? "flat" : "sharp"}`), ` · ${r.cents < 0 ? "tighten" : "loosen"} the ${label(r.string)} string`);
+}
+
+function stopTuner() {
+  if (!stopTuning) return;
+  stopTuning();
+  stopTuning = null;
+  $("tn-start").textContent = "Start tuner";
+  $("tn-note").textContent = "–";
+  showReading(null);
+  $("tn-read").textContent = "Press Start, then play one string at a time.";
+}
+
+$("tn-start").onclick = async () => {
+  if (stopTuning) return stopTuner();
+  setError("");
+  try {
+    stopTuning = await listen(showReading);
+    $("tn-start").textContent = "Stop";
+    showReading(null);
+  } catch (e) {
+    setError(e?.name === "NotAllowedError" ? "Strum needs the microphone to hear your guitar. Allow it for this site in your browser, then press Start again."
+      : e?.name === "NotFoundError" ? "No microphone found. Plug one in or check your sound settings."
+      : "Could not start the microphone.");
+  }
+};
+
 /* ---------- views ---------- */
 
-const VIEWS = ["login", "job", "song", "songs", "spotify", "playlists", "playlist"];
+const VIEWS = ["login", "job", "song", "songs", "spotify", "playlists", "playlist", "tuner"];
 let view = "songs";
 
 function show(v) {
@@ -426,10 +484,11 @@ function show(v) {
   $("player").hidden = v !== "song" || !current.sheet;
   document.body.classList.toggle("playing-view", !$("player").hidden);
   if (v !== "song") { audio.pause(); closeMenu(); } // the player lives on the song page
+  if (v !== "tuner") stopTuner(); // the microphone is only on while the tuner page is open
   else settle();
   const fromList = v === "song" && inList;
   for (const [id, on] of [["nav-songs", v === "songs" || (v === "song" && !fromList)], ["nav-playlists", v === "playlists" || v === "playlist" || fromList],
-    ["nav-spotify", v === "spotify"]]) {
+    ["nav-spotify", v === "spotify"], ["nav-tuner", v === "tuner"]]) {
     if (on) $(id).setAttribute("aria-current", "page"); else $(id).removeAttribute("aria-current");
   }
   markCurrent();
@@ -451,6 +510,7 @@ async function route() {
   if (locked) return show("login");
   const [, name, id, , listId] = location.hash.split("/");
   if (name === "spotify") return show("spotify");
+  if (name === "tuner") return show("tuner");
   if (name === "playlists") return show("playlists");
   if (name === "playlist" && plById(id)) { shownPl = id; endRename(); show("playlist"); return drawPlaylistPage(); }
   if (name === "job") return job ? show("job") : (location.hash = "#/");

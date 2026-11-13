@@ -164,6 +164,31 @@ button.pill:hover { border-color: var(--ink-4); }
 .context .pill[aria-disabled="true"] { opacity: 0.4; }
 .rowlink { min-width: 0; text-decoration: none; color: inherit; }
 
+/* tuner */
+.tuner { display: grid; justify-items: center; gap: 18px; margin-top: 34px; text-align: center; }
+.dial { width: 168px; height: 168px; border-radius: 50%; display: grid; place-items: center;
+  background: radial-gradient(circle, var(--ink) 0 62px, var(--paper) 62px 65px, transparent 65px), var(--abalone);
+  box-shadow: 0 0 0 4px var(--paper), 0 0 0 5px var(--line), 0 18px 34px -16px rgb(70 40 15 / 0.45); transition: box-shadow .3s var(--ease), opacity .3s var(--ease); }
+.dial span { color: var(--paper); font-weight: 800; font-size: 54px; letter-spacing: -0.03em; line-height: 1; }
+.dial.idle { opacity: 0.55; }
+.dial.ok { box-shadow: 0 0 0 4px var(--paper), 0 0 0 7px var(--teal), 0 18px 34px -12px rgb(47 107 106 / 0.6); }
+.meter { position: relative; width: min(420px, 100%); height: 46px; border-radius: 12px; background:
+  linear-gradient(var(--teal-tint), var(--teal-tint)) center / 10% 100% no-repeat,
+  repeating-linear-gradient(90deg, var(--line) 0 1px, transparent 1px 10%) 0 50% / 100% 40% no-repeat, var(--paper);
+  box-shadow: inset 0 0 0 1px var(--line); }
+.meter::after { content: ""; position: absolute; left: calc(50% - 1px); top: 6px; bottom: 6px; width: 2px; border-radius: 1px; background: var(--teal); opacity: .5; }
+.meter i { position: absolute; left: calc(50% - 2px); top: 4px; bottom: 4px; width: 4px; border-radius: 2px; background: var(--ink); z-index: 1;
+  transition: transform .15s var(--ease), background-color .2s var(--ease); }
+.meter.ok i { background: var(--teal); }
+.meter.idle i { opacity: 0; }
+.tn-read { min-height: 20px; color: var(--ink-2); font-size: 14px; }
+.tn-read b { color: var(--ink); }
+.strings { list-style: none; padding: 0; display: flex; gap: 6px; }
+.strings li { width: 36px; height: 32px; border-radius: 9px; display: grid; place-items: center; font-weight: 700; font-size: 13px;
+  background: var(--paper); box-shadow: inset 0 0 0 1px var(--line); color: var(--ink-2); transition: background-color .2s var(--ease), color .2s var(--ease); }
+.strings li.on { background: var(--honey-tint); box-shadow: inset 0 0 0 1px var(--honey-line); color: var(--rose); }
+.strings li.ok { background: var(--teal); box-shadow: none; color: var(--paper); }
+
 /* passcode (hosted copy only) */
 body.locked { grid-template-columns: 1fr; }
 body.locked .side { display: none; }
