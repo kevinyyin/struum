@@ -60,11 +60,11 @@ The Vercel project `struum` serves the page and your saved songs so you can open
 
 - Vercel gets only `static/`, `api/`, `vercel.json` and `package.json` (see `.vercelignore`). The Python pipeline, `data/` and `.env` never leave the Mac.
 - Songs live in a **private** Vercel Blob store (`struum-songs`): `songs/<youtube id>/…` plus `library.json`. Audio streams through short-lived signed links, so seeking works.
-- Everything with your songs is behind a passcode (`STRUM_PASSCODE`, kept in `.env` and in the project's environment variables). The browser remembers it for 30 days. To pick your own, run `scripts/set-passcode.sh`: it asks for the new one (hidden), updates `.env` and Vercel, and redeploys. That logs every browser out.
+- Everything with your songs is behind a passcode (`STRUM_PASSCODE`, kept in `.env` and in the project's environment variables). The browser remembers it for 30 days. To pick your own, run `scripts/set-passcode.sh` (asks for it, hidden), or write it after `STRUM_PASSCODE=` in `.env` and run `scripts/set-passcode.sh --from-env`. Either way it updates Vercel, redeploys and checks the live site. That logs every browser out.
 - With `BLOB_READ_WRITE_TOKEN` in `.env`, the local server uploads each new song when it finishes. To upload by hand: `node --env-file=.env scripts/sync.mjs` (missing songs) or `… sync.mjs <youtube id>` (re-upload one).
 - On the hosted page there is no link box and **Make sheet** is disabled; songs you have made say **Open sheet**.
 - For Spotify on the hosted page, add its address (`https://<your-domain>/`) as a second redirect URI in the Spotify app.
-- Deploy with `npx vercel deploy --prod` from this folder (the project is linked in `.vercel/`). Pushing to `main` deploys too once Vercel's GitHub app can see the `struum` repo (GitHub → Settings → Applications → Vercel → Repository access).
+- Pushing to `main` deploys to production. To deploy without pushing: `npx vercel deploy --prod` (the project is linked in `.vercel/`).
 
 ## What you get
 
