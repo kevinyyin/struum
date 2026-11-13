@@ -18,6 +18,8 @@ cp .env.example .env
 
 `requirements.txt` lists the top-level packages; `requirements.lock` pins everything.
 
+yt-dlp needs a JavaScript runtime to solve YouTube's challenges. Without one it prints "No supported JavaScript runtime could be found", falls back to deprecated clients, and some videos or formats may be missing. It uses deno by default: `brew install deno`. A pip-installed yt-dlp also needs its challenge-solver scripts, from the `yt-dlp-ejs` package; see https://github.com/yt-dlp/yt-dlp/wiki/EJS.
+
 ## Run
 
 ```
@@ -50,7 +52,8 @@ Each song is saved in `data/<youtube id>/` as `sheet.json`, `sheet.txt`, `sheet.
 
 - Capo and transpose change the page only; saved files stay in the original key.
 - "Suggest capo" picks the fret 0-7 with the most open shapes. For C G Am F it suggests 5 (G D Em C).
-- Lyric timing from LRCLIB gets one global offset correction to line up with the video. If LRCLIB has nothing, lyrics are transcribed with Whisper (prefix the run command with `FORCE_TRANSCRIBE=1` to skip LRCLIB).
+- Lyric timing from LRCLIB gets one global offset correction to line up with the video. If LRCLIB has nothing, lyrics are transcribed with Whisper (prefix the run command with `FORCE_TRANSCRIBE=1` to skip LRCLIB). Title and credit lines before the first lyric ("词：…", "Artist - Title") are dropped. If the lyrics contain Chinese characters (and no kana), they are aligned as Chinese whatever language the audio detection says.
+- Chord fingerings in `static/guitar.json` come from [chords-db](https://github.com/tombatossals/chords-db) (MIT licence).
 
 ## Known limits
 
@@ -65,14 +68,14 @@ Each song is saved in `data/<youtube id>/` as `sheet.json`, `sheet.txt`, `sheet.
 
 | Song | Path | Time | lyrics_source | Language | Tempo |
 |---|---|---|---|---|---|
-| Let It Be (youtu.be/CGj85pVzRJs) | pasted link | 66 s (61 s on rerun) | lrclib | en | 69.8 BPM, 4/4 |
+| Let It Be (youtu.be/CGj85pVzRJs) | pasted link | 52 s | lrclib | en | 69.8 BPM, 4/4 |
 | Same, `FORCE_TRANSCRIBE=1` | pasted link | 106 s | transcribed | en | 69.8 BPM, 4/4 |
-| 周杰倫 晴天 | artist/title request (what a Spotify pick sends) | 101 s | lrclib | zh | 68.2 BPM, 4/4 |
+| 周杰倫 晴天 | artist/title request (what a Spotify pick sends) | 66 s | lrclib | zh | 68.2 BPM, 4/4 |
 
 Observed:
 
-- Let It Be (LRCLIB): verse is `C G Am F` with C on "When", G on "trouble", Am on "Mother", F on "comes". Good. The title comes out as "The Beatles - The Beatles - Let It Be (Official Music Video) [Remastered 2015]" with an empty artist, because the video has no music metadata.
+- Let It Be (LRCLIB): verse is `C G Am F` with C on "When", G on "times", Am on "Mother", F on "comes". Good. The title comes out as "The Beatles - The Beatles - Let It Be (Official Music Video) [Remastered 2015]" with an empty artist, because the video has no music metadata. A rerun from an empty cache kept this verse; three chords elsewhere moved by one word (demucs applies a random time shift, so runs differ slightly).
 - Let It Be (transcribed): lyrics are recognisable, and the same progression is found, but Whisper returned long segments, so each chord row sits over one very wide merged line (up to ~200 columns in the `.txt`) and chords land less precisely on words than with LRCLIB.
-- 晴天: the server matched the video "晴天 周杰伦 (歌词版)" (GM Lyric, id 3-DteAHyRnI, 270 s). Characters render with chords above single characters. Chords are Em, C, G, Cmaj7, a plausible progression. The LRCLIB text includes credit lines ("词：周杰伦") and a line of solfege syllables, which show up in the sheet. Timing came from WhisperX alignment, not interpolation: 51 of the 53 multi-word lines in `sheet.json` have unevenly spaced word starts, which interpolation cannot produce (the fallback is a silent `except`, so it is not logged). On the page and in `sheet.html`, Chinese characters show word-sized gaps between them ("故 事 的 小 黄 花"). The solfege line renders letter by letter ("R e S o S o ..."): Latin text in a zh song is split per character.
+- 晴天: the server matched the video "晴天 周杰伦 (歌词版)" (GM Lyric, id 3-DteAHyRnI, 270 s). Chords are Em, C, G, Cmaj7, a plausible progression. LRCLIB's title and credit lines ("周杰伦 - 晴天", "词：周杰伦", "曲：周杰伦") are dropped, so the 13 intro chords sit on two chord-only rows before "故事的小黄花". The solfege lines keep whole syllables ("Re So So Si Do Si La"). In `sheet.html`, as on the page, consecutive Chinese characters get no word gap. Timing came from WhisperX alignment, not interpolation: all 50 lyric lines with three or more words have unevenly spaced word starts, and no "alignment failed" warning was logged.
 - The torchcodec warning at startup is harmless.
-- Not verified: the 30 s playback highlight in a browser and opening the files in a browser, and the Spotify login.
+- Checked in a browser: lines advance in time with the audio, the page scrolls with them, and the saved `.html` and `.txt` open. Not verified: the Spotify logged-in path.
