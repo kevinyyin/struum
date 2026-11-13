@@ -7,7 +7,7 @@ from uuid import uuid4
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 import pipeline
 
@@ -19,10 +19,12 @@ busy = threading.Lock()  # held for the whole life of a job
 
 
 class ByUrl(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     url: str
 
 
 class ByTitle(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     artist: str
     title: str
     duration: float
@@ -30,19 +32,22 @@ class ByTitle(BaseModel):
 
 def work(job: dict, request: dict) -> None:
     def progress(i: int, name: str) -> None:
-        job["step"], job["step_name"] = i, name
+        job["step_name"], job["step"] = name, i
 
+    sheet = error = None
     try:
-        job["sheet"] = pipeline.run(request, progress)
-        job["status"] = "done"
+        sheet = pipeline.run(request, progress)
     except pipeline.PipelineError as e:
-        job["status"], job["error"] = "error", str(e)
+        error = str(e)
     except Exception:
         # raw model/OS text must not reach the user
         log.exception("job failed")
-        job["status"], job["error"] = "error", "Something went wrong while processing this song."
-    finally:
-        busy.release()
+        error = "Something went wrong while processing this song."
+    # Release before publishing the terminal state so a client that sees it can POST again;
+    # status is written last so a poll never sees "done"/"error" with sheet/error still unset.
+    busy.release()
+    job["sheet"], job["error"] = sheet, error
+    job["status"] = "error" if error else "done"
 
 
 @app.get("/api/config")
@@ -58,7 +63,11 @@ def create(body: ByUrl | ByTitle):
            "steps": len(pipeline.STEPS), "error": None, "sheet": None}
     job_id = uuid4().hex
     jobs[job_id] = job
-    threading.Thread(target=work, args=(job, body.model_dump()), daemon=True).start()
+    try:
+        threading.Thread(target=work, args=(job, body.model_dump()), daemon=True).start()
+    except BaseException:
+        busy.release()
+        raise
     return {"id": job_id}
 
 

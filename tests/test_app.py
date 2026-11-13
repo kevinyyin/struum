@@ -66,7 +66,13 @@ def test_second_post_conflicts_while_running(monkeypatch):
     wait_done(job_id)
 
 
-@pytest.mark.parametrize("body", [{"nope": 1}, {"artist": "a", "title": "t"}, {"url": 5}])
+@pytest.mark.parametrize("body", [
+    {"nope": 1},
+    {"artist": "a", "title": "t"},
+    {"url": 5},
+    {"url": "x", "foo": 1},
+    {"url": "x", "artist": "a", "title": "t", "duration": 1},
+])
 def test_bad_body(body):
     assert client.post("/api/songs", json=body).status_code == 422
 
@@ -97,3 +103,13 @@ def test_config(monkeypatch):
 
 def test_index():
     assert "Strum" in client.get("/").text
+
+
+def test_post_right_after_done_is_not_409(monkeypatch):
+    monkeypatch.setattr(pipeline, "run", lambda request, progress: {})
+    for _ in range(50):
+        r = client.post("/api/songs", json=SONG)
+        assert r.status_code == 200
+        wait_done(r.json()["id"])
+        assert client.post("/api/songs", json=SONG).status_code == 200  # lock already free
+        time.sleep(0.02)
