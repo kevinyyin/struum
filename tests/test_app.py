@@ -186,3 +186,21 @@ def test_queue_step_makes_uploads_and_reports(monkeypatch):
         assert app_module.serve_queue_once() == "busy" and calls == []  # a local song is being made: no check spent
     finally:
         app_module.busy.release()
+
+
+def test_playlists_round_trip_through_the_local_file(monkeypatch, tmp_path):
+    monkeypatch.delenv("BLOB_READ_WRITE_TOKEN", raising=False)
+    monkeypatch.setenv("STRUM_PLAYLISTS_FILE", str(tmp_path / "playlists.json"))
+    first = client.get("/api/playlists").json()
+    assert first == {"playlists": [], "etag": None}
+    lists = [{"id": "p1", "name": " Warm-up ", "songs": ["CGj85pVzRJs", "CGj85pVzRJs", "3-DteAHyRnI"]}]
+    saved = client.put("/api/playlists", json={"playlists": lists, "etag": first["etag"]})
+    assert saved.status_code == 200
+    again = client.get("/api/playlists").json()
+    assert again["playlists"] == [{"id": "p1", "name": "Warm-up", "songs": ["CGj85pVzRJs", "3-DteAHyRnI"]}]
+    assert again["etag"] == saved.json()["etag"]
+    # a stale version is refused instead of overwriting the newer one
+    assert client.put("/api/playlists", json={"playlists": [], "etag": "stale"}).status_code == 409
+    assert client.put("/api/playlists", json={"playlists": [{"id": "p1", "name": "x", "songs": ["../../etc"]}],
+                                              "etag": again["etag"]}).status_code == 422
+    assert client.get("/api/playlists").json()["playlists"][0]["name"] == "Warm-up"

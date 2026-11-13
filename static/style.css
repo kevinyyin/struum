@@ -140,6 +140,30 @@ button.pill:hover { border-color: var(--ink-4); }
 .item:hover .act:not(.open) { background: var(--honey-tint); border-color: var(--honey-line); color: var(--rose); }
 .empty { margin-top: 22px; color: var(--ink-2); max-width: 46ch; }
 
+/* playlists */
+.subhead { font-size: 13px; font-weight: 700; margin-top: 30px; }
+.paste.newlist { margin-top: 18px; height: 38px; max-width: 420px; }
+.paste.newlist input { font-size: 13px; }
+.item .tools { display: flex; gap: 2px; align-items: center; }
+.ico.small { width: 28px; height: 28px; }
+.ico:disabled { opacity: 0.3; }
+.pltile { width: 34px; height: 34px; border-radius: 7px; background: var(--honey-tint); color: var(--rose); display: grid; place-items: center; font-weight: 700; font-size: 12px; font-variant-numeric: tabular-nums; }
+.item .pltile { width: 44px; height: 44px; border-radius: 8px; font-size: 14px; }
+.addpl { position: relative; display: inline-flex; }
+.menu { position: absolute; top: calc(100% + 6px); left: 0; z-index: 4; min-width: 230px; background: var(--paper); border-radius: 12px; padding: 6px;
+  box-shadow: 0 0 0 1px var(--line), 0 14px 30px -14px rgb(70 40 15 / 0.35); display: grid; gap: 1px; }
+.menu .opt { display: flex; align-items: center; gap: 9px; width: 100%; border: 0; background: none; padding: 7px 8px; border-radius: 8px; font-weight: 500; font-size: 12.5px; text-align: left; }
+.menu .opt:hover, .menu .opt:focus-visible { background: var(--line-soft); }
+.menu .check { width: 16px; height: 16px; border-radius: 5px; box-shadow: inset 0 0 0 1.5px var(--ink-4); display: grid; place-items: center; flex: none; color: var(--paper); }
+.menu [aria-checked="true"] .check { background: var(--teal); box-shadow: none; }
+.menu .none { padding: 6px 8px; color: var(--ink-2); font-size: 12px; }
+.menu .paste { margin-top: 4px; height: 32px; }
+.context { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-2); margin-bottom: 10px; flex-wrap: wrap; }
+.context > a:first-child { color: var(--ink); font-weight: 600; text-decoration: none; }
+.context .step { margin-left: 6px; display: inline-flex; gap: 4px; }
+.context .pill[aria-disabled="true"] { opacity: 0.4; }
+.rowlink { min-width: 0; text-decoration: none; color: inherit; }
+
 /* passcode (hosted copy only) */
 body.locked { grid-template-columns: 1fr; }
 body.locked .side { display: none; }

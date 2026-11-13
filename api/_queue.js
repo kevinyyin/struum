@@ -2,24 +2,16 @@
 // website adding a song and the Mac updating one never overwrite each other. Shared by api/queue.js and
 // scripts/queue.mjs. A check that finds nothing writes nothing: uploads are the scarce Blob operation.
 import {randomUUID} from "node:crypto";
-import {get, put} from "@vercel/blob";
+import {blob, isConflict, loadJson, saveJson} from "./_blobjson.js";
 
 const QUEUE = "queue.json";
 const KEEP = 24 * 60 * 60 * 1000; // finished entries stay a day so the page can show the result
 const STALE = 30 * 60 * 1000; // a song "making" this long means the Mac stopped mid-way: try it again
-const blob = {get, put};
 const open = (x) => x.status === "waiting" || x.status === "making";
 
 async function load(io) {
-  let r;
-  try { r = await io.get(QUEUE, {access: "private", useCache: false}); } catch { r = null; }
-  if (r?.statusCode !== 200) return {items: [], etag: null};
-  try {
-    const items = JSON.parse(await new Response(r.stream).text());
-    return {items: Array.isArray(items) ? items : [], etag: r.blob.etag};
-  } catch {
-    return {items: [], etag: r.blob.etag};
-  }
+  const {value, etag} = await loadJson(QUEUE, io);
+  return {items: Array.isArray(value) ? value : [], etag};
 }
 
 // change(items, now) returns {items, result} to write, or {result} to leave the queue as it is.
@@ -30,11 +22,10 @@ async function update(change, io) {
     const out = change(items.filter((x) => open(x) || now - x.at < KEEP), now);
     if (!out.items) return out.result;
     try {
-      await io.put(QUEUE, JSON.stringify(out.items), {access: "private", addRandomSuffix: false, allowOverwrite: true,
-        contentType: "application/json", ...(etag ? {ifMatch: etag} : {})});
+      await saveJson(QUEUE, out.items, etag, io);
       return out.result;
     } catch (e) {
-      if (!/precondition/i.test(`${e?.name} ${e?.message}`)) throw e; // someone else wrote first: read again
+      if (!isConflict(e)) throw e; // someone else wrote first: read again
     }
   }
   throw new Error("The queue is busy; try again.");

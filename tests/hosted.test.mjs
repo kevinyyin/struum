@@ -48,3 +48,15 @@ test("hosted functions refuse without the passcode", async () => {
   assert.equal((await post({ title: "Sofia", artist: "x".repeat(301), duration: 188 }, cookie)).status, 400);
   delete process.env.STRUM_PASSCODE;
 });
+
+test("playlists are validated before they are saved", async () => {
+  const { cleanPlaylists } = await import("../api/_playlists.js");
+  assert.deepEqual(cleanPlaylists([{ id: "a", name: " Set ", songs: ["CGj85pVzRJs", "CGj85pVzRJs"] }]), [{ id: "a", name: "Set", songs: ["CGj85pVzRJs"] }]);
+  assert.equal(cleanPlaylists([{ id: "a", name: "", songs: [] }]), null);
+  assert.equal(cleanPlaylists([{ id: "a/b", name: "x", songs: [] }]), null);
+  assert.equal(cleanPlaylists([{ id: "a", name: "x", songs: ["../x"] }]), null);
+  assert.equal(cleanPlaylists("nope"), null);
+  const { GET, PUT } = await import("../api/playlists.js");
+  assert.equal((await GET(req("https://x/api/playlists"))).status, 401);
+  assert.equal((await PUT(req("https://x/api/playlists", null, { method: "PUT", body: "[]" }))).status, 401);
+});

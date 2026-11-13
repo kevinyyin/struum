@@ -80,9 +80,9 @@ def work(job: dict, request: dict) -> None:
 QUEUE_EVERY, QUEUE_SOON, QUEUE_PER_DAY = 180, 15, 200
 
 
-def node_script(*args: str, timeout: int = 120) -> subprocess.CompletedProcess:
+def node_script(*args: str, timeout: int = 120, stdin: str | None = None) -> subprocess.CompletedProcess:
     return subprocess.run([shutil.which("node") or "node", str(ROOT / "scripts" / args[0]), *args[1:]],
-                          cwd=ROOT, capture_output=True, text=True, timeout=timeout)
+                          cwd=ROOT, capture_output=True, text=True, timeout=timeout, input=stdin)
 
 
 def serve_queue_once() -> str:
@@ -179,6 +179,35 @@ def library():
         made = s.get("made") or f.stat().st_mtime  # older sheets have no "made": use the file time
         songs.append({k: s.get(k) for k in ("video_id", "title", "artist", "duration")} | {"made": made})
     return sorted(songs, key=lambda s: -s["made"])
+
+
+class Playlists(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    playlists: list
+    etag: str | None = None
+
+
+# Playlists are shared with the website through the Blob store (scripts/playlists.mjs; a local file without a token).
+@app.get("/api/playlists")
+def playlists_get():
+    out = node_script("playlists.mjs", "get", timeout=30)
+    if out.returncode != 0:
+        log.warning("playlists: %s", out.stderr.strip()[-300:])
+        raise HTTPException(502, "Could not load your playlists.")
+    return json.loads(out.stdout)
+
+
+@app.put("/api/playlists")
+def playlists_put(body: Playlists):
+    out = node_script("playlists.mjs", "put", body.etag or "-", timeout=30, stdin=json.dumps(body.playlists))
+    if out.returncode == 2:
+        raise HTTPException(422, "Those playlists don't look right.")
+    if out.returncode == 3:
+        raise HTTPException(409, "Your playlists changed somewhere else.")
+    if out.returncode != 0:
+        log.warning("playlists: %s", out.stderr.strip()[-300:])
+        raise HTTPException(502, "Could not save your playlists.")
+    return json.loads(out.stdout)
 
 
 @app.get("/")

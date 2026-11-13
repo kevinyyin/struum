@@ -120,9 +120,9 @@ export const thumb = (id) => {
   return img;
 };
 
-function songLink(s, cls) {
+function songLink(s, cls, href = `#/song/${s.video_id}`) {
   const a = el("a", cls);
-  a.href = `#/song/${s.video_id}`;
+  a.href = href;
   a.dataset.id = s.video_id;
   const {title, artist} = tidy(s.title, s.artist);
   const text = el("div");
@@ -170,7 +170,7 @@ function drawLibrary() {
     ? `${library.length} ${library.length === 1 ? "sheet" : "sheets"}, newest first.`
     : "";
   if (!library.length) list.append(el("li", "empty", "No songs yet. Paste a YouTube link on the left, or pick one from Spotify."));
-  markCurrent();
+  drawPlaylists();
 }
 
 async function loadLibrary() {
@@ -186,9 +186,238 @@ async function loadLibrary() {
   window.dispatchEvent(new Event("library"));
 }
 
+
+/* ---------- playlists (shared by the Mac and the website: /api/playlists) ---------- */
+
+let playlists = [], plEtag = null;
+let inList = null; // the playlist the open song was opened from
+let shownPl = null; // the playlist page's id
+let autoplay = false; // set when a playlist moves on to its next song
+const ICON = {up: `<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 7.5 6 4.5l3 3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`, down: `<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5 6 7.5l3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`, x: `<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M3.5 3.5l5 5m0-5-5 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`, check: `<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 5.2 4.2 7.4 8 2.8" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>`};
+const svg = (name) => { const s = el("span"); s.innerHTML = ICON[name]; return s.firstChild; }; // fixed markup only
+const plById = (id) => playlists.find((p) => p.id === id);
+const songById = (id) => library.find((s) => s.video_id === id);
+const listSongs = (p) => p.songs.filter((id) => songById(id));
+const plural = (n, one) => `${n} ${one}${n === 1 ? "" : "s"}`;
+
+async function loadPlaylists() {
+  try {
+    const r = await fetch("/api/playlists");
+    if (r.ok) ({playlists, etag: plEtag} = await r.json());
+  } catch { /* keep what we have */ }
+  drawPlaylists();
+}
+
+async function savePlaylists(next) {
+  let r = null;
+  try {
+    r = await fetch("/api/playlists", {method: "PUT", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({playlists: next, etag: plEtag})});
+  } catch { /* reported below */ }
+  if (r?.ok) {
+    plEtag = (await r.json()).etag;
+    playlists = next;
+    drawPlaylists();
+    return true;
+  }
+  if (r?.status === 409) {
+    await loadPlaylists();
+    setError("Your playlists changed somewhere else, so they were reloaded. Try that again.");
+  } else setError((await r?.json().catch(() => ({})))?.detail || "Could not save your playlists.");
+  return false;
+}
+
+const edit = (id, change) => savePlaylists(playlists.map((p) => (p.id === id ? change(p) : p)));
+
+async function createPlaylist(name, songs = []) {
+  const p = {id: crypto.randomUUID(), name: name.trim().slice(0, 80), songs};
+  if (!p.name) return null;
+  return (await savePlaylists([...playlists, p])) ? p : null;
+}
+
+function plTile(p) {
+  const t = el("span", "pltile", String(listSongs(p).length));
+  t.setAttribute("aria-hidden", "true");
+  return t;
+}
+
+function drawPlaylists() {
+  // sidebar
+  $("side-playlists").replaceChildren(...playlists.map((p) => {
+    const a = el("a", "song");
+    a.href = `#/playlist/${p.id}`;
+    a.dataset.pl = p.id;
+    const text = el("div");
+    text.append(el("b", "", p.name), el("span", "who", plural(listSongs(p).length, "song")));
+    a.append(plTile(p), text);
+    return li(a);
+  }));
+  if (!playlists.length) $("side-playlists").append(el("li", "side-note", "Group songs into playlists from any song's page."));
+  // playlists page
+  $("pls-sub").textContent = playlists.length ? plural(playlists.length, "playlist") : "";
+  $("pls-list").replaceChildren(...playlists.map((p) => {
+    const a = el("a", "item");
+    a.href = `#/playlist/${p.id}`;
+    const text = el("div");
+    const n = listSongs(p);
+    text.append(el("b", "", p.name), el("span", "who", n.length ? n.map((id) => tidy(songById(id).title, songById(id).artist).title).join(", ") : "No songs yet"));
+    a.append(plTile(p), text, el("span", "t", plural(n.length, "song")));
+    return li(a);
+  }));
+  if (!playlists.length) $("pls-list").append(el("li", "empty", "No playlists yet. Name one above, then add songs from its page or from any song."));
+  if (view === "playlist") drawPlaylistPage();
+  if (current.sheet) { drawContext(); if (!$("pl-menu").hidden) drawMenu(); }
+  markCurrent();
+}
+
+function drawPlaylistPage() {
+  const p = plById(shownPl);
+  if (!p) { location.hash = "#/playlists"; return; }
+  if ($("pl-rename").hidden) $("pl-title").textContent = p.name;
+  const ids = listSongs(p);
+  const total = ids.reduce((sum, id) => sum + (songById(id).duration || 0), 0);
+  $("pl-sub").textContent = ids.length ? `${plural(ids.length, "song")} · ${fmt(total)}` : "No songs yet. Add some below.";
+  $("pl-play").hidden = !ids.length;
+  if (ids.length) $("pl-play").href = `#/song/${ids[0]}/in/${p.id}`;
+
+  $("pl-songs").replaceChildren(...ids.map((id, i) => {
+    const s = songById(id), {title, artist} = tidy(s.title, s.artist);
+    const row = el("li", "item");
+    const a = link(`#/song/${id}/in/${p.id}`, "");
+    a.className = "rowlink";
+    a.append(el("b", "", title || "Untitled"), el("span", "who", artist || "YouTube"));
+    row.onclick = (e) => { if (!e.target.closest("button, a")) a.click(); };
+    const tools = el("span", "tools");
+    const tool = (icon, label, disabled, run) => {
+      const b = el("button", "ico small");
+      b.type = "button";
+      b.append(svg(icon));
+      b.setAttribute("aria-label", label);
+      b.title = label;
+      b.disabled = disabled;
+      b.onclick = (e) => { e.preventDefault(); e.stopPropagation(); run(); };
+      tools.append(b);
+    };
+    const move = (d) => edit(p.id, (q) => {
+      const songs = [...q.songs], a2 = songs.indexOf(id), b2 = songs.indexOf(ids[i + d]);
+      [songs[a2], songs[b2]] = [songs[b2], songs[a2]];
+      return {...q, songs};
+    });
+    tool("up", "Move up", i === 0, () => move(-1));
+    tool("down", "Move down", i === ids.length - 1, () => move(1));
+    tool("x", "Remove from playlist", false, () => edit(p.id, (q) => ({...q, songs: q.songs.filter((x) => x !== id)})));
+    row.append(thumb(id), a, tools);
+    return row;
+  }));
+
+  const rest = library.filter((s) => !p.songs.includes(s.video_id));
+  $("pl-add-head").hidden = !rest.length;
+  $("pl-add").replaceChildren(...rest.map((s) => {
+    const row = el("li", "item");
+    const {title, artist} = tidy(s.title, s.artist);
+    const text = el("div");
+    text.append(el("b", "", title || "Untitled"), el("span", "who", artist || "YouTube"));
+    const b = el("button", "act", "Add");
+    b.type = "button";
+    b.onclick = (e) => { e.stopPropagation(); edit(p.id, (q) => ({...q, songs: [...q.songs, s.video_id]})); };
+    row.append(thumb(s.video_id), text, b);
+    row.onclick = () => b.click();
+    return row;
+  }));
+}
+
+$("pl-new").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const p = await createPlaylist($("pl-new-name").value);
+  if (p) { $("pl-new-name").value = ""; location.hash = `#/playlist/${p.id}`; }
+});
+$("pl-rename-btn").onclick = () => {
+  const p = plById(shownPl);
+  $("pl-rename-name").value = p.name;
+  $("pl-rename").hidden = false;
+  $("pl-title").hidden = true;
+  $("pl-rename-name").focus();
+};
+const endRename = () => { $("pl-rename").hidden = true; $("pl-title").hidden = false; };
+$("pl-rename").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const name = $("pl-rename-name").value.trim();
+  if (name && await edit(shownPl, (q) => ({...q, name}))) { endRename(); drawPlaylistPage(); }
+});
+$("pl-rename-name").addEventListener("keydown", (e) => { if (e.key === "Escape") endRename(); });
+$("pl-delete").onclick = async () => {
+  const p = plById(shownPl);
+  if (p && confirm(`Delete the playlist "${p.name}"? Its songs stay in Your songs.`)
+      && await savePlaylists(playlists.filter((q) => q.id !== p.id))) location.hash = "#/playlists";
+};
+
+// The open song's place in its playlist: "Warm-up · 2 of 5" with previous / next.
+const neighbor = (d) => {
+  const p = inList && plById(inList);
+  if (!p || !current.sheet) return null;
+  const ids = listSongs(p), i = ids.indexOf(current.sheet.video_id);
+  return i < 0 ? null : ids[i + d] ?? null;
+};
+
+function drawContext() {
+  const box = $("pl-context");
+  const p = inList && plById(inList);
+  const ids = p ? listSongs(p) : [];
+  const i = current.sheet ? ids.indexOf(current.sheet.video_id) : -1;
+  box.hidden = i < 0;
+  if (i < 0) return;
+  const step = el("span", "step");
+  for (const [d, label] of [[-1, "Previous"], [1, "Next"]]) {
+    const id = neighbor(d);
+    const a = el(id ? "a" : "span", "pill", label);
+    if (id) a.href = `#/song/${id}/in/${p.id}`; else a.setAttribute("aria-disabled", "true");
+    step.append(a);
+  }
+  box.replaceChildren(link(`#/playlist/${p.id}`, p.name), ` · ${i + 1} of ${ids.length}`, step);
+}
+
+// Add to playlist: tick the playlists this song is in, or start a new one.
+function drawMenu() {
+  const id = current.sheet.video_id, menu = $("pl-menu");
+  menu.replaceChildren(...playlists.map((p) => {
+    const b = el("button", "opt");
+    b.type = "button";
+    b.setAttribute("role", "menuitemcheckbox");
+    const on = p.songs.includes(id);
+    b.setAttribute("aria-checked", String(on));
+    const box = el("span", "check");
+    if (on) box.append(svg("check"));
+    b.append(box, p.name);
+    b.onclick = () => edit(p.id, (q) => ({...q, songs: on ? q.songs.filter((s) => s !== id) : [...q.songs, id]}));
+    return b;
+  }));
+  if (!playlists.length) menu.append(el("p", "none", "No playlists yet."));
+  const form = el("form", "paste");
+  const input = el("input");
+  input.placeholder = "New playlist";
+  input.maxLength = 80;
+  input.required = true;
+  input.setAttribute("aria-label", "New playlist name");
+  const go = el("button", "", "Create");
+  go.type = "submit";
+  form.append(input, go);
+  form.onsubmit = async (e) => { e.preventDefault(); await createPlaylist(input.value, [id]); };
+  menu.append(form);
+}
+const closeMenu = () => { $("pl-menu").hidden = true; $("add-pl").setAttribute("aria-expanded", "false"); };
+$("add-pl").onclick = () => {
+  if (!$("pl-menu").hidden) return closeMenu();
+  drawMenu();
+  $("pl-menu").hidden = false;
+  $("add-pl").setAttribute("aria-expanded", "true");
+  $("pl-menu").querySelector("button, input")?.focus();
+};
+document.addEventListener("click", (e) => { if (!e.target.closest(".addpl")) closeMenu(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("pl-menu").hidden) { closeMenu(); $("add-pl").focus(); } });
+
 /* ---------- views ---------- */
 
-const VIEWS = ["login", "job", "song", "songs", "spotify"];
+const VIEWS = ["login", "job", "song", "songs", "spotify", "playlists", "playlist"];
 let view = "songs";
 
 function show(v) {
@@ -196,18 +425,21 @@ function show(v) {
   for (const name of VIEWS) $(`view-${name}`).hidden = name !== v;
   $("player").hidden = v !== "song" || !current.sheet;
   document.body.classList.toggle("playing-view", !$("player").hidden);
-  if (v !== "song") audio.pause(); // the player lives on the song page
+  if (v !== "song") { audio.pause(); closeMenu(); } // the player lives on the song page
   else settle();
-  for (const [id, on] of [["nav-songs", v === "songs" || v === "song"], ["nav-spotify", v === "spotify"]]) {
+  const fromList = v === "song" && inList;
+  for (const [id, on] of [["nav-songs", v === "songs" || (v === "song" && !fromList)], ["nav-playlists", v === "playlists" || v === "playlist" || fromList],
+    ["nav-spotify", v === "spotify"]]) {
     if (on) $(id).setAttribute("aria-current", "page"); else $(id).removeAttribute("aria-current");
   }
   markCurrent();
 }
 
 function markCurrent() {
-  const id = view === "song" ? current.sheet?.video_id : null;
-  for (const a of $("side-songs").querySelectorAll("a.song")) {
-    if (a.dataset.id && a.dataset.id === id) a.setAttribute("aria-current", "page");
+  const id = view === "song" && !inList ? current.sheet?.video_id : null;
+  const pl = view === "playlist" ? shownPl : view === "song" ? inList : null;
+  for (const a of document.querySelectorAll("#side-songs a.song, #side-playlists a.song")) {
+    if ((a.dataset.id && a.dataset.id === id) || (a.dataset.pl && a.dataset.pl === pl)) a.setAttribute("aria-current", "page");
     else a.removeAttribute("aria-current");
   }
 }
@@ -217,14 +449,17 @@ let keepError = false; // an error that sent us home must survive the hash chang
 async function route() {
   if (keepError) keepError = false; else setError("");
   if (locked) return show("login");
-  const [, name, id] = location.hash.split("/");
+  const [, name, id, , listId] = location.hash.split("/");
   if (name === "spotify") return show("spotify");
+  if (name === "playlists") return show("playlists");
+  if (name === "playlist" && plById(id)) { shownPl = id; endRename(); show("playlist"); return drawPlaylistPage(); }
   if (name === "job") return job ? show("job") : (location.hash = "#/");
-  if (name === "song" && VID.test(id || "")) return openSong(id);
+  if (name === "song" && VID.test(id || "")) return openSong(id, listId);
   show("songs");
 }
 
-async function openSong(id) {
+async function openSong(id, listId = null) {
+  inList = plById(listId) ? listId : null;
   if (current.sheet?.video_id !== id) {
     let sheet = sheets.get(id);
     if (!sheet) {
@@ -243,6 +478,8 @@ async function openSong(id) {
   }
   if (fresh.delete(id)) { saveFresh(); drawLibrary(); }
   show("song");
+  drawContext();
+  if (autoplay) { autoplay = false; audio.play().catch(() => {}); }
 }
 
 /* ---------- chords, capo, transpose ---------- */
@@ -468,7 +705,11 @@ audio.addEventListener("play", () => {
   if (!ticking) { ticking = true; tick(); }
 });
 // 2. a loop that runs to the end of the song starts over instead of stopping
-audio.addEventListener("ended", () => { if (loop) { audio.currentTime = rowStart(loop.from); audio.play(); } });
+audio.addEventListener("ended", () => {
+  if (loop) { audio.currentTime = rowStart(loop.from); audio.play(); return; }
+  const next = neighbor(1); // a playlist moves on to its next song
+  if (next) { autoplay = true; location.hash = `#/song/${next}/in/${inList}`; }
+});
 // 6. hosted audio is a signed link that expires: on an error, fetch a fresh one once and resume
 let audioRetry = 0;
 audio.addEventListener("error", () => {
@@ -645,10 +886,11 @@ $("login").addEventListener("submit", async (e) => {
   if (!r.ok) return setError((await r.json().catch(() => ({}))).error || "Could not log in.");
   $("passcode").value = "";
   await loadLibrary();
+  await loadPlaylists();
   route();
   queueSince = Date.now();
   loadQueue();
 });
 
 window.addEventListener("hashchange", route);
-loadLibrary().then(async () => { queueSince = Date.now(); await config; route(); loadQueue(); });
+loadLibrary().then(async () => { queueSince = Date.now(); await config; if (!locked) await loadPlaylists(); route(); loadQueue(); });
