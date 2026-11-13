@@ -64,7 +64,7 @@ The Vercel project `struum` serves the page and your saved songs so you can open
 - With `BLOB_READ_WRITE_TOKEN` in `.env`, the local server uploads each new song when it finishes. To upload by hand: `node --env-file=.env scripts/sync.mjs` (missing songs) or `… sync.mjs <youtube id>` (re-upload one).
 - On the hosted page there is no link box and **Make sheet** is disabled; songs you have made say **Open sheet**.
 - For Spotify on the hosted page, add its address (`https://<your-domain>/`) as a second redirect URI in the Spotify app.
-- Pushing to `main` on GitHub deploys to production.
+- Deploy with `npx vercel deploy --prod` from this folder (the project is linked in `.vercel/`). Pushing to `main` deploys too once Vercel's GitHub app can see the `struum` repo (GitHub → Settings → Applications → Vercel → Repository access).
 
 ## What you get
 
