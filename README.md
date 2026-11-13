@@ -50,7 +50,7 @@ Each song is saved in `data/<youtube id>/` as `sheet.json`, `sheet.txt`, `sheet.
 
 - Capo and transpose change the page only; saved files stay in the original key.
 - "Suggest capo" picks the fret 0-7 with the most open shapes. For C G Am F it suggests 5 (G D Em C).
-- Lyric timing from LRCLIB gets one global offset correction to line up with the video. If LRCLIB has nothing, lyrics are transcribed with Whisper (`FORCE_TRANSCRIBE=1` skips LRCLIB).
+- Lyric timing from LRCLIB gets one global offset correction to line up with the video. If LRCLIB has nothing, lyrics are transcribed with Whisper (prefix the run command with `FORCE_TRANSCRIBE=1` to skip LRCLIB).
 
 ## Known limits
 
@@ -67,12 +67,12 @@ Each song is saved in `data/<youtube id>/` as `sheet.json`, `sheet.txt`, `sheet.
 |---|---|---|---|---|---|
 | Let It Be (youtu.be/CGj85pVzRJs) | pasted link | 66 s (61 s on rerun) | lrclib | en | 69.8 BPM, 4/4 |
 | Same, `FORCE_TRANSCRIBE=1` | pasted link | 106 s | transcribed | en | 69.8 BPM, 4/4 |
-| 周杰倫 晴天 | Spotify-shaped request | 101 s | lrclib | zh | 68.2 BPM, 4/4 |
+| 周杰倫 晴天 | artist/title request (what a Spotify pick sends) | 101 s | lrclib | zh | 68.2 BPM, 4/4 |
 
 Observed:
 
 - Let It Be (LRCLIB): verse is `C G Am F` with C on "When", G on "trouble", Am on "Mother", F on "comes". Good. The title comes out as "The Beatles - The Beatles - Let It Be (Official Music Video) [Remastered 2015]" with an empty artist, because the video has no music metadata.
 - Let It Be (transcribed): lyrics are recognisable, and the same progression is found, but Whisper returned long segments, so each chord row sits over one very wide merged line (up to ~200 columns in the `.txt`) and chords land less precisely on words than with LRCLIB.
-- 晴天: the server matched the video "晴天 周杰伦 (歌词版)" (GM Lyric, id 3-DteAHyRnI, 270 s). Characters render with chords above single characters. Chords are Em, C, G, Cmaj7, a plausible progression. The LRCLIB text includes credit lines ("词：周杰伦") and a line of solfege syllables, which show up in the sheet. The Chinese alignment model loaded; whether alignment succeeded or fell back to interpolation is not logged (the fallback is a silent `except`).
+- 晴天: the server matched the video "晴天 周杰伦 (歌词版)" (GM Lyric, id 3-DteAHyRnI, 270 s). Characters render with chords above single characters. Chords are Em, C, G, Cmaj7, a plausible progression. The LRCLIB text includes credit lines ("词：周杰伦") and a line of solfege syllables, which show up in the sheet. Timing came from WhisperX alignment, not interpolation: 51 of the 53 multi-word lines in `sheet.json` have unevenly spaced word starts, which interpolation cannot produce (the fallback is a silent `except`, so it is not logged). On the page and in `sheet.html`, Chinese characters show word-sized gaps between them ("故 事 的 小 黄 花"). The solfege line renders letter by letter ("R e S o S o ..."): Latin text in a zh song is split per character.
 - The torchcodec warning at startup is harmless.
 - Not verified: the 30 s playback highlight in a browser and opening the files in a browser, and the Spotify login.
