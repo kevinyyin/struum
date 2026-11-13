@@ -23,6 +23,7 @@ a { color: inherit; }
 * { scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 [hidden] { display: none !important; }
+body.booting > * { visibility: hidden; } /* until the first library answer says locked or not */
 
 /* sidebar */
 .side { border-right: 1px solid var(--line); padding: 22px 14px; display: flex; flex-direction: column; gap: 18px; overflow-y: auto; }

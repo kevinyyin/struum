@@ -113,6 +113,8 @@ async function loadLibrary() {
     if (r.ok) library = await r.json();
   } catch { /* keep the last list */ }
   document.body.classList.toggle("locked", locked);
+  await config; // hosted or local is known before anything shows
+  document.body.classList.remove("booting");
   drawLibrary();
   window.dispatchEvent(new Event("library"));
 }
