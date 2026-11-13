@@ -14,6 +14,9 @@ body{font-family:sans-serif;max-width:60em;margin:2em auto;padding:0 1em}
 .w .chord{display:block;width:max-content;margin-bottom:.1em}
 .chord.now{background:#06c;color:#fff;border-color:#06c;text-decoration:underline}
 .row:focus-visible{outline:2px solid #06c}
+.diagrams{display:flex;flex-wrap:wrap;gap:.5em}
+figure{margin:0;text-align:center}
+figcaption{font-weight:bold}
 #error{color:#b00020}
 audio{width:100%;position:sticky;top:0;background:#fff}
 </style>
@@ -27,6 +30,16 @@ audio{width:100%;position:sticky;top:0;background:#fff}
 <p id="status" role="status"></p>
 <p id="error" role="alert"></p>
 <div id="head"></div>
+<div id="controls" hidden>
+  <label>Transpose <input id="transpose" type="number" min="-6" max="6" step="1" value="0"></label>
+  <label>Capo <select id="capo">
+    <option>0</option><option>1</option><option>2</option><option>3</option>
+    <option>4</option><option>5</option><option>6</option><option>7</option>
+  </select></label>
+  <button id="suggest" type="button">Suggest capo</button>
+  <button id="reset" type="button">Reset</button>
+</div>
+<div id="info"></div>
 <div id="sheet"></div>
 <script type="module" src="/static/app.js"></script>
 </body>

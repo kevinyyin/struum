@@ -1,3 +1,5 @@
+import {transpose, prefersFlats, suggestCapo, findFingering, diagramSvg} from "/static/chords.js";
+
 export const current = {sheet: null, shift: 0};
 
 const $ = (id) => document.getElementById(id);
@@ -15,10 +17,61 @@ let activeRow = null;
 let activeChord = null;
 let pollId = 0; // a newer startSong cancels an older poll loop
 
-// The only place chord text is drawn; Task 7 applies current.shift here.
+let flats = false; // chosen once per song from the original chord names
+let db = null;
+fetch("/static/guitar.json").then((r) => r.json()).then((j) => { db = j; drawInfo(); }).catch(() => {});
+
+// The only place chord text is drawn.
 export function drawChord(span) {
-  span.textContent = span.dataset.name;
+  span.textContent = current.shift ? transpose(span.dataset.name, current.shift, flats) : span.dataset.name;
 }
+
+const names = () => chordEls.map((c) => c.dataset.name);
+
+function drawInfo() {
+  const info = $("info");
+  info.replaceChildren();
+  if (!current.sheet) return;
+  const {bpm, strum} = current.sheet;
+  const strumEl = el("code", "", strum);
+  const lab = el("p", "", `Tempo: ${bpm} BPM. `);
+  lab.append(el("span", "", "Suggested strum: "), strumEl);
+  const row = el("div", "diagrams");
+  for (const n of new Set(chordEls.map((c) => c.textContent))) {
+    const fig = el("figure");
+    const pos = db && findFingering(db, n);
+    if (pos) {
+      const box = el("div");
+      box.innerHTML = diagramSvg(pos, n); // numbers and the XML-escaped name only
+      fig.append(box);
+    }
+    fig.append(el("figcaption", "", n));
+    row.append(fig);
+  }
+  info.append(lab, row);
+}
+
+function refresh() {
+  current.shift = Number($("transpose").value) - Number($("capo").value);
+  chordEls.forEach(drawChord);
+  drawInfo();
+}
+
+function resetControls() {
+  $("transpose").value = 0;
+  $("capo").value = 0;
+  $("controls").hidden = false;
+  refresh();
+}
+
+$("transpose").addEventListener("input", refresh);
+$("capo").addEventListener("input", refresh);
+$("reset").addEventListener("click", resetControls);
+$("suggest").addEventListener("click", () => {
+  const t = Number($("transpose").value);
+  $("capo").value = suggestCapo(names().map((n) => transpose(n, t, flats)));
+  refresh();
+});
 
 function chordEl(c) {
   const s = el("span", "chord");
@@ -35,6 +88,7 @@ export function renderSheet(sheet) {
   head.replaceChildren();
   box.replaceChildren();
   rowEls = []; chordEls = []; activeRow = activeChord = null;
+  flats = false; current.shift = 0;
 
   head.append(el("h2", "", sheet.title), el("p", "", sheet.artist));
   const links = el("p");
@@ -78,6 +132,8 @@ export function renderSheet(sheet) {
     rowEls.push(div);
     box.append(div);
   }
+  flats = prefersFlats(names());
+  resetControls();
 }
 
 function highlight(t) {
