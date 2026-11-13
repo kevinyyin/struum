@@ -27,6 +27,12 @@ audio{width:100%;position:sticky;top:0;background:#fff}
   <label>YouTube link <input id="url" type="url" size="40" required></label>
   <button type="submit">Go</button>
 </form>
+<section id="spotify">
+  <p id="sp-msg" role="status"></p>
+  <button id="sp-login" type="button" hidden>Log in with Spotify</button>
+  <div id="sp-tabs" hidden></div>
+  <div id="sp-list"></div>
+</section>
 <p id="status" role="status"></p>
 <p id="error" role="alert"></p>
 <div id="head"></div>
@@ -42,5 +48,6 @@ audio{width:100%;position:sticky;top:0;background:#fff}
 <div id="info"></div>
 <div id="sheet"></div>
 <script type="module" src="/static/app.js"></script>
+<script type="module" src="/static/spotify.js"></script>
 </body>
 </html>
