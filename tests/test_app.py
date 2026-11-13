@@ -154,3 +154,35 @@ def test_finished_song_syncs_only_with_a_blob_token(monkeypatch):
     assert calls and calls[0][-2:] == [str(app_module.ROOT / "scripts" / "sync.mjs"), "abcdefghijk"]
     wait_done(start(monkeypatch, lambda request, progress: (_ for _ in ()).throw(pipeline.PipelineError("no"))))
     assert len(calls) == 1  # a failed job uploads nothing
+
+
+def test_queue_step_makes_uploads_and_reports(monkeypatch):
+    import subprocess as sp
+    calls, nxt = [], ['{"id": "q1", "artist": "Clairo", "title": "Sofia", "duration": 188}']
+
+    def fake_node(*args, timeout=120):
+        calls.append(args)
+        return sp.CompletedProcess(args, 0, nxt[0] if args[:2] == ("queue.mjs", "next") else "", "")
+
+    monkeypatch.setattr(app_module, "node_script", fake_node)
+    seen = []
+    monkeypatch.setattr(pipeline, "run", lambda request, progress: seen.append(request) or {"video_id": "abcdefghijk", "rows": []})
+    assert app_module.serve_queue_once() == "made"
+    assert seen == [{"artist": "Clairo", "title": "Sofia", "duration": 188}]
+    assert calls == [("queue.mjs", "next"), ("sync.mjs", "abcdefghijk"), ("queue.mjs", "finish", "q1", "done", "abcdefghijk")]
+
+    calls.clear()
+    monkeypatch.setattr(pipeline, "run", lambda r, p: (_ for _ in ()).throw(pipeline.PipelineError("No YouTube match.")))
+    assert app_module.serve_queue_once() == "made"
+    assert calls[-1] == ("queue.mjs", "finish", "q1", "failed", "No YouTube match.")
+
+    calls.clear()
+    nxt[0] = "null"
+    assert app_module.serve_queue_once() == "empty" and calls == [("queue.mjs", "next")]
+
+    calls.clear()
+    assert app_module.busy.acquire(blocking=False)
+    try:
+        assert app_module.serve_queue_once() == "busy" and calls == []  # a local song is being made: no check spent
+    finally:
+        app_module.busy.release()

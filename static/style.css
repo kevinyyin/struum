@@ -136,6 +136,7 @@ button.pill:hover { border-color: var(--ink-4); }
 .act { height: 27px; padding: 0 10px; border-radius: 9px; border: 1px solid var(--line); background: var(--paper); font-weight: 600; font-size: 11.5px; white-space: nowrap; }
 .act:hover { border-color: var(--ink-4); }
 .act.open { background: var(--teal-tint); border-color: var(--teal-line); color: var(--teal); }
+.act.queued, .act.queued:disabled { background: var(--honey-tint); border-color: var(--honey-line); color: var(--rose); opacity: 1; cursor: default; }
 .item:hover .act:not(.open) { background: var(--honey-tint); border-color: var(--honey-line); color: var(--rose); }
 .empty { margin-top: 22px; color: var(--ink-2); max-width: 46ch; }
 

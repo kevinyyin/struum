@@ -1,4 +1,4 @@
-import {startSong, findSong, isBusy, config, canMakeSongs} from "/static/app.js";
+import {startSong, findSong, isBusy, config, canMakeSongs, queuedAs, requestSong} from "/static/app.js";
 
 const REDIRECT = location.origin + "/"; // must match a redirect URI registered on the Spotify app
 const SCOPE = "user-read-recently-played user-top-read user-library-read";
@@ -94,6 +94,10 @@ function pick(t) {
   const artist = t.artists?.[0]?.name ?? "";
   const made = findSong(t.name, artist);
   if (made) { location.hash = `#/song/${made}`; return; }
+  if (!canMakeSongs()) { // hosted: ask the Mac
+    if (!queuedAs(t.name, artist)) requestSong({artist, title: t.name, duration: t.duration_ms / 1000, art: artOf(t)});
+    return;
+  }
   startSong({artist, title: t.name, duration: t.duration_ms / 1000}, {title: t.name, by: artist, art: artOf(t)});
 }
 
@@ -103,12 +107,16 @@ function text(t) {
   return d;
 }
 
+const QUEUED = {waiting: "Waiting for Mac", making: "Making…"};
+
 function action(t) {
-  const made = findSong(t.name, t.artists?.[0]?.name ?? "");
-  const b = el("button", made ? "act open" : "act", made ? "Open sheet" : "Make sheet");
+  const artist = t.artists?.[0]?.name ?? "";
+  const made = findSong(t.name, artist);
+  const queued = !made && !canMakeSongs() && queuedAs(t.name, artist);
+  const b = el("button", made ? "act open" : queued ? "act queued" : "act", made ? "Open sheet" : queued ? QUEUED[queued] : "Make sheet");
   b.type = "button";
-  b.disabled = !made && (isBusy() || !canMakeSongs());
-  if (b.disabled) b.title = canMakeSongs() ? "One song at a time" : "Make new songs with the app on your Mac";
+  b.disabled = !made && (queued ? true : canMakeSongs() && isBusy());
+  if (b.disabled) b.title = queued ? "Your Mac makes it the next time the Strum app is running there" : "One song at a time";
   b.onclick = (e) => { e.stopPropagation(); pick(t); };
   return b;
 }
@@ -134,7 +142,7 @@ function drawQuick() {
     b.type = "button";
     b.append(art(t), text(t));
     b.title = findSong(t.name, t.artists?.[0]?.name ?? "") ? "Open sheet" : "Make sheet";
-    b.onclick = () => { if (findSong(t.name, t.artists?.[0]?.name ?? "") || (!isBusy() && canMakeSongs())) pick(t); };
+    b.onclick = () => { if (findSong(t.name, t.artists?.[0]?.name ?? "") || !canMakeSongs() || !isBusy()) pick(t); };
     li.append(b);
     return li;
   }));
@@ -190,7 +198,7 @@ window.addEventListener("busy", () => { if (tabs.length) drawList(); });
 async function init() {
   const cfg = await config;
   clientId = cfg.spotify_client_id || "";
-  if (cfg.can_make === false) $("sp-sub").textContent = "Songs you have made open here. Make new ones with the app on your Mac; they appear after it syncs.";
+  if (cfg.can_make === false) $("sp-sub").textContent = "Make sheet asks your Mac: it checks every few minutes while the Strum app is running there, and the song appears here when it's done.";
   if (!clientId) {
     msg("Spotify needs a client ID in .env. See README.md for the two-minute setup.");
     $("sp-side-msg").textContent = "Add a Spotify client ID to .env to see your songs here.";

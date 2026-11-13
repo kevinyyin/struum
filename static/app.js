@@ -44,6 +44,63 @@ let locked = false;
 /* ---------- library ---------- */
 
 export let library = [];
+
+/* ---------- the website's queue (hosted copy only): songs your Mac makes ---------- */
+
+let queue = [];
+const pending = (x) => x.status === "waiting" || x.status === "making";
+const QUEUE_TEXT = {waiting: "Waiting for your Mac", making: "Making on your Mac…", failed: "Couldn't make it"};
+
+// "waiting" / "making" when this song is queued, else null.
+export function queuedAs(title, artist) {
+  return queue.find((x) => pending(x) && x.title === title && x.artist === artist)?.status ?? null;
+}
+
+async function loadQueue() {
+  if (canMake || locked) return;
+  try {
+    const r = await fetch("/api/queue");
+    if (!r.ok) return;
+    const before = new Set(queue.filter(pending).map((x) => x.id));
+    queue = await r.json();
+    const finished = queue.filter((x) => x.status === "done" && before.has(x.id));
+    if (finished.length) {
+      finished.forEach((x) => fresh.add(x.video_id));
+      saveFresh();
+      await loadLibrary(); // pulls in the new songs
+    }
+  } catch { /* try again on the next tick */ }
+  drawLibrary();
+  window.dispatchEvent(new Event("library"));
+  watchQueue();
+}
+
+// Each check is a Blob read (free plan: 10,000 a month): every 30 s, only while something is pending and the
+// page is visible, and for at most 20 minutes after the last request.
+let queueTimer = 0, queueSince = 0;
+function watchQueue() {
+  clearTimeout(queueTimer);
+  if (!queue.some(pending) || Date.now() - queueSince > 20 * 60 * 1000) return;
+  queueTimer = setTimeout(() => (document.hidden ? watchQueue() : loadQueue()), 30000);
+}
+document.addEventListener("visibilitychange", () => { if (!document.hidden && queue.some(pending)) loadQueue(); });
+
+export async function requestSong(song) {
+  setError("");
+  let r;
+  try {
+    r = await fetch("/api/queue", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(song)});
+  } catch {
+    return setError("Could not reach the server.");
+  }
+  if (!r.ok) return setError((await r.json().catch(() => ({}))).error || "Could not queue that song.");
+  const item = await r.json();
+  queue = [...queue.filter((x) => x.id !== item.id), item];
+  queueSince = Date.now();
+  drawLibrary();
+  window.dispatchEvent(new Event("library"));
+  watchQueue();
+}
 const sheets = new Map();
 const fresh = new Set(JSON.parse(store.get("strum_fresh") || "[]"));
 const saveFresh = () => store.set("strum_fresh", JSON.stringify([...fresh]));
@@ -87,6 +144,16 @@ function drawLibrary() {
     if (job.art) { pic = el("img", "art"); pic.alt = ""; pic.src = job.art; }
     a.append(pic, text, el("i", "dot busy"));
     side.append(li(a));
+  }
+  for (const q of queue.filter((x) => pending(x) || x.status === "failed")) {
+    const row = el("div", "song");
+    let pic = el("span", "art ring");
+    if (q.art) { pic = el("img", "art"); pic.alt = ""; pic.src = q.art; }
+    const text = el("div");
+    text.append(el("b", "", q.title), el("span", "who", q.status === "failed" ? `${QUEUE_TEXT.failed}: ${q.error || ""}` : QUEUE_TEXT[q.status]));
+    row.append(pic, text);
+    if (pending(q)) row.append(el("i", "dot busy"));
+    side.append(li(row));
   }
   for (const s of library) side.append(li(songLink(s, "song")));
   if (!library.length && !job) side.append(el("li", "side-note", "Songs you make show up here."));
@@ -579,7 +646,9 @@ $("login").addEventListener("submit", async (e) => {
   $("passcode").value = "";
   await loadLibrary();
   route();
+  queueSince = Date.now();
+  loadQueue();
 });
 
 window.addEventListener("hashchange", route);
-loadLibrary().then(route);
+loadLibrary().then(async () => { queueSince = Date.now(); await config; route(); loadQueue(); });

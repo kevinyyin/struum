@@ -4,6 +4,7 @@ import { blobPath, passcodeOk, sessionCookie, authed } from "../api/_auth.js";
 import { POST as login } from "../api/login.js";
 import { GET as data } from "../api/data.js";
 import { GET as library } from "../api/library.js";
+import { GET as queueGet, POST as queuePost } from "../api/queue.js";
 
 const req = (url, cookie, init = {}) => new Request(url, { ...init, headers: { ...(cookie ? { cookie } : {}), ...(init.headers || {}) } });
 
@@ -38,5 +39,12 @@ test("hosted functions refuse without the passcode", async () => {
   assert.equal((await data(req("https://x/api/data?id=CGj85pVzRJs&file=audio.mp3"))).status, 401);
   assert.equal((await data(req("https://x/api/data?id=..%2F&file=audio.mp3"))).status, 404);
   assert.equal((await library(req("https://x/api/library"))).status, 401);
+  assert.equal((await queueGet(req("https://x/api/queue"))).status, 401);
+  const post = (body, cookie) => queuePost(req("https://x/api/queue", cookie, { method: "POST", body: JSON.stringify(body) }));
+  assert.equal((await post({ title: "Sofia", artist: "Clairo", duration: 188 })).status, 401);
+  const cookie = ok.headers.get("set-cookie").split(";")[0];
+  assert.equal((await post({ title: "", artist: "Clairo", duration: 188 }, cookie)).status, 400);
+  assert.equal((await post({ title: "Sofia", artist: "Clairo", duration: 99999 }, cookie)).status, 400);
+  assert.equal((await post({ title: "Sofia", artist: "x".repeat(301), duration: 188 }, cookie)).status, 400);
   delete process.env.STRUM_PASSCODE;
 });

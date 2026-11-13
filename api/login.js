@@ -1,9 +1,10 @@
 import {get, put} from "@vercel/blob";
 import {passcodeOk, sessionCookie} from "./_auth.js";
 
-// Wrong guesses are counted in the store (shared by every instance): 10 in 15 minutes locks logins for the rest
-// of the window. Cost: someone guessing can lock you out for up to 15 minutes; they cannot guess faster.
-const FAILS = "auth/failures.json", WINDOW = 15 * 60 * 1000, MAX = 10;
+// Wrong guesses are counted in the store (shared by every instance): 5 in an hour locks logins for the rest of
+// the hour. Each wrong guess is one Blob upload, so this also caps what guessing can spend (free plan: 2,000/month).
+// Cost: someone guessing can lock you out for up to an hour; they cannot guess faster.
+const FAILS = "auth/failures.json", WINDOW = 60 * 60 * 1000, MAX = 5;
 
 async function recentFailures() {
   try {
@@ -19,7 +20,7 @@ async function recentFailures() {
 export async function POST(request) {
   if (!process.env.STRUM_PASSCODE) return Response.json({error: "STRUM_PASSCODE is not set on the server."}, {status: 500});
   const fails = await recentFailures();
-  if (fails.length >= MAX) return Response.json({error: "Too many wrong passcodes. Try again in 15 minutes."}, {status: 429});
+  if (fails.length >= MAX) return Response.json({error: "Too many wrong passcodes. Try again in an hour."}, {status: 429});
   let body = {};
   try { body = await request.json(); } catch { /* treated as a wrong passcode */ }
   if (!passcodeOk(body.passcode)) {

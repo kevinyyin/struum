@@ -62,7 +62,8 @@ The Vercel project `struum` serves the page and your saved songs so you can open
 - Songs live in a **private** Vercel Blob store (`struum-songs`): `songs/<youtube id>/…` plus `library.json`. Audio streams through short-lived signed links, so seeking works.
 - Everything with your songs is behind a passcode (`STRUM_PASSCODE`, kept in `.env` and in the project's environment variables). The browser remembers it for 30 days. To pick your own, run `scripts/set-passcode.sh` (asks for it, hidden), or write it after `STRUM_PASSCODE=` in `.env` and run `scripts/set-passcode.sh --from-env`. Either way it updates Vercel, redeploys and checks the live site. That logs every browser out.
 - With `BLOB_READ_WRITE_TOKEN` in `.env`, the local server uploads each new song when it finishes. To upload by hand: `node --env-file=.env scripts/sync.mjs` (missing songs) or `… sync.mjs <youtube id>` (re-upload one).
-- On the hosted page there is no link box and **Make sheet** is disabled; songs you have made say **Open sheet**.
+- **Make sheet on the hosted page** queues the song for your Mac. While the local server runs (with `BLOB_READ_WRITE_TOKEN` in `.env`), it checks the queue every 3 minutes (at most 200 checks a day), makes the song, uploads it, and the page shows it when done. Queued songs wait while the Mac is off. The hosted page has no link box; paste links on the Mac.
+- **Free-plan Blob limits** (Hobby, per month): 1 GB storage, 10,000 reads, 2,000 uploads/listings, 10 GB transfer; going over blocks the store for 30 days. The queue check rate, the page's 30-second status checks (only while a song is pending) and the passcode lockout (5 wrong in an hour) are set to stay well inside them.
 - For Spotify on the hosted page, add its address (`https://<your-domain>/`) as a second redirect URI in the Spotify app.
 - Pushing to `main` deploys to production. To deploy without pushing: `npx vercel deploy --prod` (the project is linked in `.vercel/`).
 
