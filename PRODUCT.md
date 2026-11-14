@@ -27,9 +27,10 @@ Chords are detected from the recording, not scraped from chord sites. The sheet 
 
 ## Capabilities and Constraints
 
-- Exists today: Spotify login (PKCE in the browser) with three lists; paste a YouTube link; five-step job with progress; sheet with chords over words and chord-only rows for intro and solos; playback with the current line and chord highlighted and auto-scroll; click a line to jump; transpose (−6 to +6) and capo (0 to 7) with a "suggest capo" button; one diagram per distinct chord following capo and transpose; tempo and a suggested strum pattern; download as .txt and .html; the source video link.
+- Exists today: Spotify login (PKCE in the browser) with three lists; paste a YouTube link; five-step job with progress; sheet with chords over words and chord-only rows for intro and solos; playback with the current line and chord highlighted and auto-scroll; click a line to jump; transpose (−6 to +6) and capo (0 to 7) with an "Auto" capo button; capo and transpose remembered per song in the browser; one diagram per distinct chord following capo and transpose; tempo and a suggested strum pattern; download as .txt and .html; the source video link.
 - Lyrics may be English or Chinese (one character per word, chord boxes above characters).
-- One job at a time; a second request while one runs gets a "busy" message.
+- One job at a time; a second request while one runs gets a "busy" message. A running job can be cancelled from its progress page.
+- A finished song has two exits in its More menu, on the Mac only: "Make again" (re-runs the models on the same video and replaces the sheet, chord edits included) and "Delete song" (moves it to `data/trash/`, recoverable, and out of every playlist). The hosted copy cannot make, re-make or delete songs.
 - Wanted and in scope for the redesign: a library view of songs already made; looping a section to practise it.
 - Local only for now: FastAPI on 127.0.0.1:8000, plain ES-module JavaScript, no build step. Hosting on Vercel is planned later (page and saved sheets on Vercel, processing stays on the Mac), so the page should stay static files.
 - Chord fingerings come from the vendored chords-db dataset (static/guitar.json, MIT).

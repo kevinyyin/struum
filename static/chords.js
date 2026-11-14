@@ -53,11 +53,44 @@ const KEY = {C: "C", "C#": "Csharp", Db: "Csharp", D: "D", "D#": "Eb", Eb: "Eb",
 const SUFFIX = {"": "major", m: "minor", mMaj7: "mmaj7"};
 for (const s of ["7", "maj7", "m7", "dim", "dim7", "m7b5", "aug", "sus2", "sus4", "6", "m6", "9", "maj9", "m9", "11", "13", "7sus4"]) SUFFIX[s] = s;
 
+// Open strings, low to high, as pitch classes; frets in the dataset are relative to baseFret.
+const TUNING = [4, 9, 2, 7, 11, 4];
+const fretOf = (p, i) => (p.frets[i] > 0 ? p.frets[i] + p.baseFret - 1 : 0);
+const noteOf = (p, i) => (TUNING[i] + fretOf(p, i)) % 12;
+
+// Start a shape on its bass note: where one of the three low strings plays it, the strings below are muted.
+// (The dataset draws Bm as 224432, with F# under the root; this gives x24432.)
+function fromBass(p, bass) {
+  const i = [0, 1, 2].find((k) => p.frets[k] >= 0 && noteOf(p, k) === bass);
+  return i > 0 ? {...p, frets: p.frets.map((f, k) => (k < i ? -1 : f))} : p;
+}
+
+// How awkward a shape is; lower is easier. A wrong bass, muted strings (cheap right above the bass, dear anywhere else),
+// the fret span, a barre and playing far up the neck all cost. Ties keep the dataset's order.
+function cost(p, bass) {
+  const first = p.frets.findIndex((f) => f >= 0);
+  let i = first + 1, c = noteOf(p, first) === bass ? 0 : 5;
+  for (; p.frets[i] < 0; i++) c += 1;
+  c += 4 * p.frets.slice(i).filter((f) => f < 0).length;
+  const held = p.frets.map((_, k) => fretOf(p, k)).filter((f) => f > 0);
+  if (held.length) c += Math.max(...held) - Math.min(...held) + 1 + Math.max(0, Math.max(...held) - 4);
+  return c + (p.barres?.length ? 2 : 0);
+}
+const pick = (chord, bass) => chord && chord.positions.map((p) => fromBass(p, bass)).reduce((x, y) => (cost(y, bass) < cost(x, bass) ? y : x));
+
+// A slash chord gets its own shape where the dataset has one (every major and minor does).
+// Otherwise it gets the plain chord's shape, marked noBass so the page can say so.
 export function findFingering(db, name) {
   const m = PARSE.exec(name);
   if (!m || !(m[2] in SUFFIX)) return null;
-  const chord = db.chords[KEY[m[1]]]?.find((c) => c.suffix === SUFFIX[m[2]]);
-  return chord?.positions[0] ?? null;
+  const all = db.chords[KEY[m[1]]] ?? [];
+  if (m[3]) {
+    const b = idx(m[3]);
+    const slash = pick(all.find((c) => c.suffix === `${m[2]}/${SHARP[b]}` || c.suffix === `${m[2]}/${FLAT[b]}`), b);
+    if (slash) return slash;
+  }
+  const pos = pick(all.find((c) => c.suffix === SUFFIX[m[2]]), idx(m[1]));
+  return pos && m[3] ? {...pos, noBass: true} : pos ?? null;
 }
 
 const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");

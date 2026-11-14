@@ -89,3 +89,86 @@ def test_fetch_lyrics_searches_when_get_is_unsynced_or_wrong_length(monkeypatch)
     monkeypatch.setattr(httpx, "Client", lambda **kw: real(transport=httpx.MockTransport(handler), **kw))
     assert pipeline.fetch_lyrics("A", "T", 200.0) == [{"start": 1.0, "text": "hello"}]
     assert seen == [("/api/get", "chord-sheet-app"), ("/api/search", "chord-sheet-app")]
+
+
+VID = "QDYfEBY9NM4"
+
+
+def fake_models(monkeypatch, tmp_path, title="T"):
+    """Everything run() calls that needs the network or a model, replaced by instant fakes."""
+    monkeypatch.setattr(pipeline, "DATA", tmp_path)
+    monkeypatch.setattr(pipeline, "video_info", lambda vid: {"duration": 10, "title": title, "artist": None, "track": None})
+
+    def download(vid, dest):
+        (dest / "audio.mp3").write_bytes(b"new audio")
+        return dest / "audio.mp3"
+
+    def separate(audio, dest, alive=lambda: None):
+        (dest / "htdemucs").mkdir()
+        return dest / "vocals.wav", dest / "no_vocals.wav"
+
+    beats = [i * 0.5 for i in range(20)]
+    line = {"start": 0.5, "end": 3.0, "words": [{"text": "hi", "start": 0.5, "end": 1.0}]}
+    monkeypatch.setattr(pipeline, "download", download)
+    monkeypatch.setattr(pipeline, "separate", separate)
+    monkeypatch.setattr(pipeline, "detect_chords", lambda f: [])
+    monkeypatch.setattr(pipeline, "detect_beats", lambda f: (beats, beats[::4]))
+    monkeypatch.setattr(pipeline, "fetch_lyrics", lambda artist, title, duration: None)
+    monkeypatch.setattr(pipeline, "word_times", lambda vocals, lrc: ([line], "en"))
+
+
+def old_song(tmp_path):
+    import json
+    (tmp_path / VID).mkdir()
+    (tmp_path / VID / "sheet.json").write_text(json.dumps({"video_id": VID, "title": "Old", "artist": "A", "rows": []}))
+    (tmp_path / VID / "audio.mp3").write_bytes(b"old audio")
+
+
+def test_run_returns_a_saved_sheet_unless_forced(monkeypatch, tmp_path):
+    import json
+    fake_models(monkeypatch, tmp_path)
+    old_song(tmp_path)
+    url = {"url": "https://youtu.be/" + VID}
+    assert pipeline.run(url, lambda i, s: None)["title"] == "Old"
+    doc = pipeline.run(url | {"artist": "A", "title": "Kept", "force": True}, lambda i, s: None)
+    assert (doc["title"], doc["artist"], doc["video_id"]) == ("Kept", "A", VID)  # the names it had, not the video's
+    assert json.loads((tmp_path / VID / "sheet.json").read_text()) == doc
+    assert (tmp_path / VID / "audio.mp3").read_bytes() == b"new audio"
+    assert json.loads((tmp_path / "trash" / VID / "sheet.json").read_text())["title"] == "Old"  # the old one is kept
+    assert sorted(p.name for p in tmp_path.iterdir()) == [VID, "trash"]  # no temp folder left
+
+
+def test_a_failed_or_cancelled_remake_leaves_the_old_sheet(monkeypatch, tmp_path):
+    import json
+    fake_models(monkeypatch, tmp_path)
+    old_song(tmp_path)
+    forced = {"url": "https://youtu.be/" + VID, "artist": "A", "title": "Old", "force": True}
+
+    def cancel_at_chords(i, step):
+        if i == 2:
+            raise pipeline.Cancelled
+
+    with pytest.raises(pipeline.Cancelled):
+        pipeline.run(forced, cancel_at_chords)
+    monkeypatch.setattr(pipeline, "detect_chords", lambda f: 1 / 0)
+    with pytest.raises(ZeroDivisionError):
+        pipeline.run(forced, lambda i, s: None)
+    assert json.loads((tmp_path / VID / "sheet.json").read_text())["title"] == "Old"
+    assert (tmp_path / VID / "audio.mp3").read_bytes() == b"old audio"
+    assert [p.name for p in tmp_path.iterdir()] == [VID]  # temp folders removed, nothing trashed
+
+
+def test_separate_stops_demucs_when_cancelled(monkeypatch, tmp_path):
+    import os, sys
+    fake = tmp_path / "python"  # stands in for "python -m demucs": records its pid, then hangs
+    fake.write_text(f"#!/bin/sh\necho $$ > {tmp_path}/pid\nexec sleep 60\n")
+    fake.chmod(0o755)
+    monkeypatch.setattr(sys, "executable", str(fake))
+
+    def cancel():
+        raise pipeline.Cancelled
+
+    with pytest.raises(pipeline.Cancelled):
+        pipeline.separate(tmp_path / "audio.mp3", tmp_path, cancel)
+    with pytest.raises(ProcessLookupError):
+        os.kill(int((tmp_path / "pid").read_text()), 0)

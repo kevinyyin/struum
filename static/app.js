@@ -25,6 +25,11 @@ const store = {
   set(k, v) { try { localStorage.setItem(k, v); } catch {} },
 };
 
+// How you play each song, {video_id: [capo, transpose]}.
+// shortcut: kept in this browser only, move it to the server if it should follow you between the Mac and the phone
+const tunings = () => JSON.parse(store.get("strum_capo") || "{}"); // read each time, so two open tabs don't undo each other
+const tuningOf = (id) => tunings()[id] || [0, 0];
+
 let rowEls = [], chordEls = [], segEls = [];
 let activeRow = -1, activeChord = null;
 let loop = null; // {from, to} row indices, inclusive
@@ -136,13 +141,16 @@ export const thumb = (id) => {
   return img;
 };
 
+// A song's second line in lists: the artist, and the capo you use if any.
+const who = (s) => { const [capo] = tuningOf(s.video_id); return (tidy(s.title, s.artist).artist || "YouTube") + (capo ? ` · Capo ${capo}` : ""); };
+
 function songLink(s, cls, href = `#/song/${s.video_id}`) {
   const a = el("a", cls);
   a.href = href;
   a.dataset.id = s.video_id;
   const {title, artist} = tidy(s.title, s.artist);
   const text = el("div");
-  text.append(el("b", "", title || "Untitled"), el("span", "who", artist || "YouTube"));
+  text.append(el("b", "", title || "Untitled"), el("span", "who", who(s)));
   a.append(thumb(s.video_id), text);
   if (fresh.has(s.video_id)) { const d = el("i", "dot"); d.title = "New"; a.append(d); }
   return a;
@@ -155,7 +163,7 @@ function drawLibrary() {
     const a = el("a", "song");
     a.href = "#/job";
     const text = el("div");
-    text.append(el("b", "", job.title), el("span", "who", `Making… ${job.step + 1} of ${job.steps}`));
+    text.append(el("b", "", job.title), el("span", "who", job.cancelling ? "Stopping…" : `Making… ${job.step + 1} of ${job.steps}`));
     let pic = el("span", "art ring");
     if (job.art) { pic = el("img", "art"); pic.alt = ""; pic.src = job.art; }
     a.append(pic, text, el("i", "dot busy"));
@@ -187,7 +195,7 @@ function drawLibrary() {
   $("songs-sub").textContent = library.length
     ? `${library.length} ${library.length === 1 ? "sheet" : "sheets"}, newest first.`
     : "";
-  if (!library.length) list.append(el("li", "empty", "No songs yet. Paste a YouTube link on the left, or pick one from Spotify."));
+  if (!library.length) list.append(el("li", "empty", "No songs yet. Paste a YouTube link, or pick a song from Spotify."));
   drawPlaylists();
 }
 
@@ -211,6 +219,8 @@ let playlists = [], plEtag = null;
 let inList = null; // the playlist the open song was opened from
 let shownPl = null; // the playlist page's id
 let autoplay = false; // set when a playlist moves on to its next song
+let undo = null; // the last song removed from a playlist: {pl, songs before, title}
+let held = null; // the song a playlist stopped in front of, because the capo has to move first
 const ICON = {plus: `<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 2.5v7M2.5 6h7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`, back: `<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M7.5 3 4.5 6l3 3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`, up: `<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 7.5 6 4.5l3 3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`, down: `<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5 6 7.5l3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`, x: `<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M3.5 3.5l5 5m0-5-5 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`, check: `<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 5.2 4.2 7.4 8 2.8" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>`};
 export const svg = (name) => { const s = el("span"); s.innerHTML = ICON[name]; return s.firstChild; }; // fixed markup only
 const plById = (id) => playlists.find((p) => p.id === id);
@@ -295,6 +305,12 @@ function drawPlaylistPage() {
   const ids = listSongs(p);
   const total = ids.reduce((sum, id) => sum + (songById(id).duration || 0), 0);
   $("pl-sub").textContent = ids.length ? `${plural(ids.length, "song")} · ${fmt(total)}` : "No songs yet. Add some below.";
+  if (undo?.pl === p.id) {
+    const back = el("button", "pill quiet", `Undo removing “${undo.title}”`);
+    back.type = "button";
+    back.onclick = () => { const {songs} = undo; undo = null; edit(p.id, (q) => ({...q, songs})); };
+    $("pl-sub").append(back);
+  }
   $("pl-play").hidden = !ids.length;
   if (ids.length) $("pl-play").href = `#/song/${ids[0]}/in/${p.id}`;
 
@@ -303,7 +319,7 @@ function drawPlaylistPage() {
     const row = el("li", "item");
     const a = link(`#/song/${id}/in/${p.id}`, "");
     a.className = "rowlink";
-    a.append(el("b", "", title || "Untitled"), el("span", "who", artist || "YouTube"));
+    a.append(el("b", "", title || "Untitled"), el("span", "who", who(s)));
     row.onclick = (e) => { if (!e.target.closest("button, a")) a.click(); };
     const tools = el("span", "tools");
     const tool = (icon, label, disabled, run) => {
@@ -317,13 +333,17 @@ function drawPlaylistPage() {
       tools.append(b);
     };
     const move = (d) => edit(p.id, (q) => {
+      undo = null;
       const songs = [...q.songs], a2 = songs.indexOf(id), b2 = songs.indexOf(ids[i + d]);
       [songs[a2], songs[b2]] = [songs[b2], songs[a2]];
       return {...q, songs};
     });
     tool("up", "Move up", i === 0, () => move(-1));
     tool("down", "Move down", i === ids.length - 1, () => move(1));
-    tool("x", "Remove from playlist", false, () => edit(p.id, (q) => ({...q, songs: q.songs.filter((x) => x !== id)})));
+    tool("x", "Remove from playlist", false, () => {
+      undo = {pl: p.id, songs: p.songs, title: title || "Untitled"};
+      edit(p.id, (q) => ({...q, songs: q.songs.filter((x) => x !== id)}));
+    });
     row.append(thumb(id), a, tools);
     return row;
   }));
@@ -334,10 +354,10 @@ function drawPlaylistPage() {
     const row = el("li", "item");
     const {title, artist} = tidy(s.title, s.artist);
     const text = el("div");
-    text.append(el("b", "", title || "Untitled"), el("span", "who", artist || "YouTube"));
+    text.append(el("b", "", title || "Untitled"), el("span", "who", who(s)));
     const b = el("button", "act", "Add");
     b.type = "button";
-    b.onclick = (e) => { e.stopPropagation(); edit(p.id, (q) => ({...q, songs: [...q.songs, s.video_id]})); };
+    b.onclick = (e) => { e.stopPropagation(); undo = null; edit(p.id, (q) => ({...q, songs: [...q.songs, s.video_id]})); };
     row.append(thumb(s.video_id), text, b);
     row.onclick = () => b.click();
     return row;
@@ -392,6 +412,12 @@ function drawContext() {
     step.append(a);
   }
   box.replaceChildren(link(`#/playlist/${p.id}`, p.name), ` · ${i + 1} of ${ids.length}`, step);
+  if (held === current.sheet.video_id) {
+    const go = el("button", "pill honey", ctl.capo ? `Move the capo to ${ctl.capo}, then press play` : "Take the capo off, then press play");
+    go.type = "button";
+    go.onclick = () => audio.play();
+    box.append(go);
+  }
 }
 
 // Add to playlist: tick the playlists this song is in, or start a new one.
@@ -422,16 +448,47 @@ function drawMenu() {
   form.onsubmit = async (e) => { e.preventDefault(); await createPlaylist(input.value, [id]); };
   menu.append(form);
 }
-const closeMenu = () => { $("pl-menu").hidden = true; $("add-pl").setAttribute("aria-expanded", "false"); };
-$("add-pl").onclick = () => {
-  if (!$("pl-menu").hidden) return closeMenu();
-  drawMenu();
-  $("pl-menu").hidden = false;
-  $("add-pl").setAttribute("aria-expanded", "true");
-  $("pl-menu").querySelector("button, input")?.focus();
+// One "More" pill holds the things you do now and then; Add to playlist swaps its menu for the playlist one.
+const closeMenu = () => { $("more-menu").hidden = $("pl-menu").hidden = true; $("more").setAttribute("aria-expanded", "false"); };
+const openMenu = (id) => {
+  closeMenu();
+  $(id).hidden = false;
+  $("more").setAttribute("aria-expanded", "true");
+  $(id).querySelector("button, a, input")?.focus();
 };
+$("more").onclick = () => ($("more-menu").hidden && $("pl-menu").hidden ? openMenu("more-menu") : closeMenu());
+$("add-pl").onclick = () => { drawMenu(); openMenu("pl-menu"); };
+$("more-menu").addEventListener("click", (e) => { const o = e.target.closest(".opt"); if (o && o.id !== "add-pl") closeMenu(); });
 document.addEventListener("click", (e) => { if (!e.target.closest(".addpl")) closeMenu(); });
-document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("pl-menu").hidden) { closeMenu(); $("add-pl").focus(); } });
+
+// The two exits for a sheet that came out wrong (on the Mac only; the website's menu hides them).
+$("remake").onclick = () => {
+  const s = current.sheet, {title, artist} = tidy(s.title, s.artist);
+  if (job) return setError("One song at a time: wait for the current one to finish.");
+  if (!confirm(`Make "${title || "Untitled"}" again from the same video? It takes about a minute. The new sheet replaces this one, `
+    + "so chord edits you saved will be replaced too. The old sheet goes to the data/trash folder.")) return;
+  startSong(null, {title: title || "Untitled", by: artist}, `/api/songs/${s.video_id}/remake`);
+};
+$("delete-song").onclick = async () => {
+  const id = current.sheet.video_id, {title} = tidy(current.sheet.title, current.sheet.artist);
+  if (!confirm(`Delete "${title || "Untitled"}"? It leaves Your songs and your playlists. `
+    + "Its files move to the data/trash folder, so you can get it back.")) return;
+  let r = null;
+  try { r = await fetch(`/api/songs/${id}`, {method: "DELETE"}); } catch { /* reported below */ }
+  if (!r?.ok) return setError((await r?.json().catch(() => ({})))?.detail || "Could not delete that song.");
+  if (editing) stopEditing(); // nothing left to save them to
+  sheets.delete(id);
+  if (fresh.delete(id)) saveFresh();
+  const all = tunings();
+  delete all[id];
+  store.set("strum_capo", JSON.stringify(all));
+  current.sheet = null;
+  await Promise.all([loadLibrary(), loadPlaylists()]); // the server took it out of the playlists too
+  location.hash = "#/";
+};
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !($("more-menu").hidden && $("pl-menu").hidden)) { closeMenu(); $("more").focus(); }
+});
 
 /* ---------- tuner ---------- */
 
@@ -537,6 +594,8 @@ function stopEditing() {
 function redrawEditing() {
   drawRows(editing.rows);
   refresh();
+  activeRow = -2; // the rows are new: mark the playing line again
+  highlight(audio.currentTime);
   const n = changedSlots().size;
   $("eb-msg").textContent = n ? `${n} ${n === 1 ? "change" : "changes"} not saved yet. Tap a chord or a word to keep going.`
     : "Tap a chord to change it, or a word to add one.";
@@ -589,7 +648,18 @@ $("eb-remove").onclick = () => {
   setSlot(names);
 };
 $("edit-chords").onclick = () => (editing ? null : startEditing());
-$("eb-cancel").onclick = stopEditing;
+// The edit bar's own play button: with a chord or word picked, it plays from the start of that line, so you hear what you are fixing.
+$("eb-play").onclick = () => {
+  if (!audio.paused) return audio.pause();
+  if (editing?.sel) audio.currentTime = rowStart(editing.sel.r);
+  audio.play();
+};
+// Cancel, Escape, leaving the page and reloading all ask first when there are chord changes to lose.
+const unsaved = () => (editing ? changedSlots().size : 0);
+const mayDiscard = (ask) => { const n = unsaved(); return !n || confirm(`${ask} ${n} chord ${n === 1 ? "change" : "changes"}?`); };
+const cancelEditing = () => { if (mayDiscard("Discard")) stopEditing(); };
+window.addEventListener("beforeunload", (e) => { if (unsaved()) e.preventDefault(); });
+$("eb-cancel").onclick = cancelEditing;
 $("eb-save").onclick = async () => {
   const ops = [...changedSlots().values()].map(({r, w, names}) => ({row: r, word: w, names}));
   if (!ops.length) return stopEditing();
@@ -606,12 +676,12 @@ $("eb-save").onclick = async () => {
   sheets.set(id, saved);
   current.sheet = saved;
   stopEditing();
-  $("edit-chords").textContent = "Saved";
-  setTimeout(() => { $("edit-chords").textContent = "Edit chords"; }, 2000);
+  $("more").textContent = "Saved";
+  setTimeout(() => { $("more").textContent = "More"; }, 2000);
 };
 document.addEventListener("keydown", (e) => {
   if (e.key !== "Escape" || !editing) return;
-  if (editing.sel) { editing.sel = null; redrawEditing(); } else stopEditing();
+  if (editing.sel) { editing.sel = null; redrawEditing(); } else cancelEditing();
 });
 
 /* ---------- views ---------- */
@@ -620,13 +690,18 @@ const VIEWS = ["login", "job", "song", "songs", "spotify", "playlists", "playlis
 let view = "songs";
 
 function show(v) {
+  // every page shares one scroller: a new page starts at its top, the open song returns to its current line
+  if (v !== view) $("main").scrollTo({top: 0, behavior: "instant"});
+  const back = v === "song" && v !== view;
   view = v;
   for (const name of VIEWS) $(`view-${name}`).hidden = name !== v;
   $("player").hidden = v !== "song" || !current.sheet;
   document.body.classList.toggle("playing-view", !$("player").hidden);
   if (v !== "song") { audio.pause(); closeMenu(); if (editing) stopEditing(); } // the player lives on the song page
   if (v !== "tuner") stopTuner(); // the microphone is only on while the tuner page is open
-  else settle();
+  if (v === "song") settle(); // a sheet drawn while hidden has no layout yet
+  if (back && activeRow > 0) rowEls[activeRow]?.scrollIntoView({block: "center", behavior: "instant"});
+  document.title = v === "song" && current.sheet ? `${$("title").textContent} · Strum` : "Strum";
   const fromList = v === "song" && inList;
   for (const [id, on] of [["nav-songs", v === "songs" || (v === "song" && !fromList)], ["nav-playlists", v === "playlists" || v === "playlist" || fromList],
     ["nav-spotify", v === "spotify"], ["nav-tuner", v === "tuner"]]) {
@@ -671,8 +746,9 @@ async function openSong(id, listId = null) {
         sheet = await r.json();
         sheets.set(id, sheet);
       } catch {
+        keepError = true;
         location.hash = "#/";
-        return setError("Could not open that song. It may have been deleted from data/.");
+        return setError("Could not open that song. It may have been deleted.");
       }
     }
     renderSheet(sheet);
@@ -700,15 +776,26 @@ function drawInfo() {
   if (!current.sheet) return;
   for (const n of new Set(chordEls.map((c) => c.textContent))) {
     const fig = el("figure", "shape");
+    fig.dataset.name = n;
     fig.append(el("figcaption", "", n));
     const pos = db && findFingering(db, n);
     if (pos) {
       const box = el("div");
       box.innerHTML = diagramSvg(pos, n); // numbers and the XML-escaped name only
       fig.append(box);
+      if (pos.noBass) fig.append(el("small", "", `${n.split("/")[0]} shape`)); // honest: the bass note is not in this picture
     } else fig.append(el("div", "none", db ? "no diagram" : ""));
     panel.append(fig);
   }
+  markShape();
+}
+
+// The diagram of the chord sounding now is lit and scrolled to the middle of its strip.
+function markShape() {
+  const panel = $("panel-chords"), name = activeChord?.textContent;
+  for (const f of panel.children) f.classList.toggle("now", f.dataset.name === name);
+  const f = panel.querySelector(".now");
+  if (f) panel.scrollTo({left: f.offsetLeft - (panel.clientWidth - f.offsetWidth) / 2});
 }
 
 function refresh() {
@@ -718,6 +805,16 @@ function refresh() {
   $("capo").textContent = ctl.capo;
   $("transpose").textContent = ctl.transpose > 0 ? `+${ctl.transpose}` : ctl.transpose;
   $("reset").hidden = !ctl.capo && !ctl.transpose;
+  $("capo-tag").hidden = !ctl.capo;
+  $("capo-tag").textContent = `Capo ${ctl.capo} · `;
+  const id = current.sheet?.video_id;
+  if (id) {
+    const all = tunings();
+    if (ctl.capo || ctl.transpose) all[id] = [ctl.capo, ctl.transpose]; else delete all[id];
+    store.set("strum_capo", JSON.stringify(all));
+    for (const w of document.querySelectorAll(`a[data-id="${id}"] .who`)) w.textContent = who(current.sheet);
+  }
+  if (held) drawContext(); // its note names the capo
   drawInfo();
   settle();
 }
@@ -749,6 +846,17 @@ function settle() {
 let settleTimer = 0;
 window.addEventListener("resize", () => { clearTimeout(settleTimer); settleTimer = setTimeout(settle, 120); });
 document.fonts?.ready.then(() => settle());
+
+// The large sheet is sized for arm's length. The pill or S switches it, and the choice is remembered.
+function setLarge(on) {
+  document.body.classList.toggle("large-sheet", on);
+  $("large").setAttribute("aria-pressed", String(on));
+  store.set("strum_large", on ? "1" : "0");
+  settle();
+  if (activeRow > 0) rowEls[activeRow]?.scrollIntoView({block: "center"}); // keep your place
+}
+$("large").onclick = () => setLarge(!document.body.classList.contains("large-sheet"));
+if (store.get("strum_large") === "1") { document.body.classList.add("large-sheet"); $("large").setAttribute("aria-pressed", "true"); }
 
 const bump = (key, d, lo, hi) => () => { ctl[key] = clamp(ctl[key] + d, lo, hi); refresh(); };
 $("capo-down").onclick = bump("capo", -1, 0, 7);
@@ -805,7 +913,7 @@ export function renderSheet(sheet) {
 
   drawRows(sheet.rows);
 
-  ctl.capo = ctl.transpose = 0;
+  [ctl.capo, ctl.transpose] = tuningOf(sheet.video_id);
   refresh();
   audio.src = `/data/${sheet.video_id}/audio.mp3`;
   $("play").classList.remove("on");
@@ -860,13 +968,18 @@ function drawRows(data) {
         const span = el("span", "w");
         const top = el("span", "c");
         w.chords.forEach((c, n) => top.append(chordFor(c, i, k, n)));
-        if (editing) span.onclick = () => selectSlot(i, k, w.chords.length); // tap a word: add a chord there
+        if (editing) { // tap a word, or press Enter on it: add a chord there
+          span.onclick = () => selectSlot(i, k, w.chords.length);
+          span.tabIndex = 0;
+          span.setAttribute("role", "button");
+          span.onkeydown = (e) => { if (e.key === "Enter" && e.target === span) { e.preventDefault(); selectSlot(i, k, w.chords.length); } };
+        }
         span.append(top, w.text);
         if (next && CJK.test(w.text.slice(-1)) && CJK.test(next.text[0])) span.classList.add("join");
         div.append(span);
       });
     }
-    div.tabIndex = 0;
+    div.tabIndex = editing ? -1 : 0; // while editing, the chords and words are the stops
     div.setAttribute("role", "button");
     div.addEventListener("click", (e) => rowAction(i, e.shiftKey));
     div.addEventListener("keydown", (e) => {
@@ -912,13 +1025,20 @@ function drawLoop() {
 
 function setLoop(from, to) {
   loop = {from: Math.min(from, to), to: Math.max(from, to)};
+  outside = false;
   drawLoop();
   if (audio.currentTime < rowStart(loop.from) || audio.currentTime >= rowEnd(loop.to)) audio.currentTime = rowStart(loop.from);
 }
 
+// A jump outside the loop does not end it: play carries on from there and loops again once it is back inside.
+// Only L (or the loop button) clears a loop.
+let outside = false;
+function leaveLoop(i) { outside = !!loop && (i < loop.from || i > loop.to); }
+
 function rowAction(i, extend) {
   if (editing) return; // taps edit chords instead
   if (extend) return setLoop(loop ? loop.from : Math.max(activeRow, 0), i);
+  leaveLoop(i);
   audio.currentTime = rowStart(i);
   highlight(audio.currentTime);
 }
@@ -929,16 +1049,24 @@ $("loop").onclick = () => {
 
 $("play").onclick = () => (audio.paused ? audio.play() : audio.pause());
 let ticking = false;
+const showPlaying = (on) => {
+  for (const b of [$("play"), $("eb-play")]) { b.classList.toggle("on", on); b.setAttribute("aria-label", on ? "Pause" : "Play"); }
+};
 audio.addEventListener("play", () => {
-  $("play").classList.add("on");
-  $("play").setAttribute("aria-label", "Pause");
+  showPlaying(true);
   if (!ticking) { ticking = true; tick(); }
+  if (held) { held = null; drawContext(); }
+  if (store.get("strum_large") === null) setLarge(true); // never chosen: the first play turns the large sheet on
 });
 // 2. a loop that runs to the end of the song starts over instead of stopping
 audio.addEventListener("ended", () => {
   if (loop) { audio.currentTime = rowStart(loop.from); audio.play(); return; }
+  if (editing) return; // a playlist does not move on in the middle of an edit
   const next = neighbor(1); // a playlist moves on to its next song
-  if (next) { autoplay = true; location.hash = `#/song/${next}/in/${inList}`; }
+  if (!next) return;
+  autoplay = tuningOf(next)[0] === ctl.capo;
+  held = autoplay ? null : next;
+  location.hash = `#/song/${next}/in/${inList}`;
 });
 // 6. hosted audio is a signed link that expires: on an error, fetch a fresh one once and resume
 let audioRetry = 0;
@@ -950,15 +1078,27 @@ audio.addEventListener("error", () => {
   audio.currentTime = t;
   if (playing) audio.play().catch(() => {});
 });
-audio.addEventListener("pause", () => { $("play").classList.remove("on"); $("play").setAttribute("aria-label", "Play"); });
+audio.addEventListener("pause", () => showPlaying(false));
 audio.addEventListener("loadedmetadata", buildTrack);
-audio.addEventListener("seeked", () => highlight(audio.currentTime));
+audio.addEventListener("seeked", () => {
+  highlight(audio.currentTime);
+  // paused, nothing else follows the playhead: bring its line into view (the timeline, a loop, the arrows)
+  if (audio.paused && view === "song" && !editing) rowEls[Math.max(activeRow, 0)]?.scrollIntoView({block: "center"});
+});
 
 function tick() {
-  if (loop && audio.currentTime >= rowEnd(loop.to) - 0.04) audio.currentTime = rowStart(loop.from);
+  if (loop) {
+    const t = audio.currentTime, end = rowEnd(loop.to) - 0.04;
+    if (outside) outside = t < rowStart(loop.from) || t >= end;
+    else if (t >= end) audio.currentTime = rowStart(loop.from);
+  }
   highlight(audio.currentTime);
   if (audio.paused) ticking = false; else requestAnimationFrame(tick);
 }
+
+// After you scroll by hand, the sheet waits a few seconds before it follows the song again.
+let handScroll = 0;
+for (const ev of ["wheel", "touchmove"]) $("main").addEventListener(ev, () => { handScroll = Date.now(); }, {passive: true});
 
 function highlight(t) {
   $("t-now").textContent = fmt(t);
@@ -974,7 +1114,7 @@ function highlight(t) {
     rowEls[r]?.classList.add("now");
     // the next sung line is what you read ahead to, even across intro and solo rows
     rowEls[rows().findIndex((x, i) => i > r && x.type !== "instrumental")]?.classList.add("next");
-    if (!audio.paused && view === "song") rowEls[r]?.scrollIntoView({block: "center", behavior: "smooth"});
+    if (!audio.paused && view === "song" && !editing && Date.now() - handScroll > 4000) rowEls[r]?.scrollIntoView({block: "center", behavior: "smooth"});
   }
   let chord = null;
   for (const c of chordEls) if (Number(c.dataset.time) <= t) chord = c; // chordEls is in time order
@@ -982,6 +1122,7 @@ function highlight(t) {
     activeChord?.classList.remove("now");
     chord?.classList.add("now");
     activeChord = chord;
+    markShape();
   }
 }
 
@@ -999,26 +1140,57 @@ function highlight(t) {
   track.addEventListener("pointerup", (e) => {
     if (!down) return;
     if (down.drag && loop) setLoop(loop.from, loop.to);
-    else { audio.currentTime = timeAt(e.clientX); highlight(audio.currentTime); }
+    else { const t = timeAt(e.clientX); leaveLoop(rowAt(t)); audio.currentTime = t; highlight(t); }
     down = null;
   });
   track.addEventListener("keydown", (e) => {
     const d = {ArrowLeft: -5, ArrowRight: 5}[e.key];
-    if (d) { e.preventDefault(); audio.currentTime = clamp(audio.currentTime + d, 0, duration()); }
+    if (d) { e.preventDefault(); const t = clamp(audio.currentTime + d, 0, duration()); leaveLoop(rowAt(t)); audio.currentTime = t; }
   });
 }
 
-// Hands are on the guitar: Space plays or pauses, L loops, from anywhere that is not a control.
+// Hands are on the guitar: Space plays or pauses, the arrows step a line, L loops, Shift with an arrow grows the loop, - and + move the capo.
+// Space works on a focused pill or link too (Enter still presses those); only typing and the menu keep it.
+// While editing chords the player is hidden: only Space acts, through the edit bar's play button.
+const songKey = (e) => view === "song" && current.sheet && !editing && !e.metaKey && !e.ctrlKey && !e.altKey
+  && !e.target.closest("input, [role=menu]");
 document.addEventListener("keydown", (e) => {
-  if (!current.sheet || e.metaKey || e.ctrlKey || e.altKey) return;
-  if (e.target.closest("input, textarea, button, a, [role=slider], [role=tab]")) return; // lyric rows don't block them
+  // while editing, only Space acts (the edit bar's play button), and not on the bar's own controls
+  if (editing && view === "song" && e.key === " " && !e.target.closest("input, button, a")) { e.preventDefault(); $("eb-play").click(); }
+  if (!songKey(e)) return;
   if (e.key === " ") { e.preventDefault(); $("play").click(); }
   if (e.key === "l" || e.key === "L") $("loop").click();
+  if (e.key === "s" || e.key === "S") $("large").click();
+  if ("-=+".includes(e.key)) $(e.key === "-" ? "capo-down" : "capo-up").click();
+  const d = {ArrowLeft: -1, ArrowRight: 1}[e.key];
+  if (!d || e.target.closest("[role=slider]")) return; // on the bar the arrows seek by seconds
+  e.preventDefault();
+  const n = rows().length - 1, cur = Math.max(activeRow, 0);
+  if (e.shiftKey) {
+    const a = loop || {from: cur, to: cur};
+    return setLoop(clamp(a.from + Math.min(d, 0), 0, n), clamp(a.to + Math.max(d, 0), 0, n));
+  }
+  const restart = d < 0 && audio.currentTime - rowStart(activeRow) > 2; // the left arrow first returns to the start of this line
+  const i = activeRow + (restart ? 0 : d);
+  if (i > n) return;
+  leaveLoop(i);
+  audio.currentTime = i < 0 ? 0 : rowStart(i);
+  highlight(audio.currentTime);
 });
+// Firefox presses a focused button when Space comes up
+document.addEventListener("keyup", (e) => { if (e.key === " " && songKey(e)) e.preventDefault(); });
 
 /* ---------- making a sheet ---------- */
 
-let job = null; // {title, by, step, steps, name}
+// On phones and narrow windows the sidebar is a tab bar, so the link box moves to the Your songs page.
+{
+  const narrow = matchMedia("(max-width: 760px)");
+  const place = () => (narrow.matches ? $("songs-sub") : document.querySelector(".side .nav")).after($("go"));
+  narrow.addEventListener("change", place);
+  place();
+}
+
+let job = null; // {title, by, step, steps, name, id (once the server has it), cancelling}
 export const isBusy = () => !!job;
 
 function setBusy(on) {
@@ -1036,11 +1208,28 @@ function drawJob() {
   $("job-by").textContent = job.by;
   $("job-steps").replaceChildren(...Array.from({length: job.steps}, (_, i) =>
     el("li", i < job.step ? "done" : i === job.step ? "now" : "")));
-  $("job-step").textContent = `${job.name}… step ${job.step + 1} of ${job.steps}. A new song takes about a minute; you can browse while it works.`;
+  $("job-step").textContent = job.cancelling ? "Stopping… the step that is running has to finish first, which can take a few seconds."
+    : `${job.name}… step ${job.step + 1} of ${job.steps}. A new song takes about a minute; you can browse while it works.`;
+  $("job-cancel").disabled = !job.id || !!job.cancelling;
   drawLibrary();
 }
 
-export async function startSong(body, label = {}) {
+// Cancel asks the server to stop; the poll in run() sees "cancelled" and goes back to the library.
+$("job-cancel").onclick = async () => {
+  const j = job;
+  if (!j?.id || j.cancelling) return;
+  j.cancelling = true;
+  drawJob();
+  let r = null;
+  try { r = await fetch(`/api/songs/${j.id}/cancel`, {method: "POST"}); } catch { /* reported below */ }
+  if (r?.ok || job !== j) return;
+  j.cancelling = false;
+  drawJob();
+  setError("Could not cancel. Is the server still running?");
+};
+
+// path: where the job starts. Make again posts to the song's own /remake, with no body.
+export async function startSong(body, label = {}, path = "/api/songs") {
   if (!canMake) return setError("New songs are made by the app on your Mac; they show up here after it syncs.");
   if (job) return setError("One song at a time: wait for the current one to finish.");
   job = {title: label.title || "Making your sheet", by: label.by || "", art: /^https:\/\/[\w.-]+\.scdn\.co\/[^"'()\\\s]*$/.test(label.art || "") ? label.art : "",
@@ -1048,7 +1237,7 @@ export async function startSong(body, label = {}) {
   setBusy(true);
   location.hash = "#/job";
   drawJob();
-  try { await run(body); } finally {
+  try { await run(body, path); } finally {
     job = null;
     setBusy(false);
     drawLibrary();
@@ -1056,10 +1245,10 @@ export async function startSong(body, label = {}) {
   }
 }
 
-async function run(body) {
+async function run(body, path) {
   let res;
   try {
-    res = await fetch("/api/songs", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
+    res = await fetch(path, {method: "POST", headers: {"Content-Type": "application/json"}, body: body ? JSON.stringify(body) : undefined});
   } catch {
     return setError("Could not reach the server. Is it still running?");
   }
@@ -1070,6 +1259,8 @@ async function run(body) {
   }
   const me = ++pollId; // only now: a refused request must not cancel the running job's poll
   const {id} = await res.json();
+  job.id = id;
+  drawJob(); // Cancel works from here on
   while (me === pollId) {
     let st;
     try {
@@ -1083,6 +1274,10 @@ async function run(body) {
     if (st.status === "done") {
       const sheet = st.sheet;
       sheets.set(sheet.video_id, sheet);
+      if (current.sheet?.video_id === sheet.video_id) { // made again: the old sheet must not stay on the page
+        if (editing) stopEditing();
+        if (view === "song") renderSheet(sheet); else current.sheet = null; // null: drawn fresh when next opened
+      }
       const watching = location.hash === "#/job";
       if (!watching) { fresh.add(sheet.video_id); saveFresh(); }
       job = null; // so the library redraw drops the in-progress row
@@ -1091,6 +1286,7 @@ async function run(body) {
       return;
     }
     if (st.status === "error") return setError(st.error || "Processing failed.");
+    if (st.status === "cancelled") return setError(""); // your own choice: back to the library with no error band
     Object.assign(job, {step: st.step, steps: st.steps, name: st.step_name});
     drawJob();
     await new Promise((r) => setTimeout(r, 1000));
@@ -1122,5 +1318,11 @@ $("login").addEventListener("submit", async (e) => {
   loadQueue();
 });
 
-window.addEventListener("hashchange", route);
+let lastHash = location.hash;
+window.addEventListener("hashchange", () => {
+  // a No puts the address back and stays in the edit
+  if (!mayDiscard("Leave and discard")) return history.replaceState(null, "", lastHash);
+  lastHash = location.hash;
+  route();
+});
 loadLibrary().then(async () => { queueSince = Date.now(); await config; if (!locked) await loadPlaylists(); route(); loadQueue(); });

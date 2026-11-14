@@ -194,7 +194,7 @@ components:
     backgroundColor: "{colors.paper}"
     rounded: "{rounded.player}"
     height: "54px"
-    width: "min(540px, calc(100vw - 248px - 32px))"
+    width: "min(720px, calc(100vw - 248px - 32px))"
   edit-bar:
     backgroundColor: "{colors.paper}"
     rounded: "{rounded.player}"
@@ -261,7 +261,7 @@ A warm, low-chroma wood palette with two small accents that each mean one family
 
 ### Secondary
 - **Spruce Honey** (`honey`): capo, the practice loop, and the thing in hand. Full honey for loop segments on the timeline, the breathing current processing step and busy dot, and the 1.5px ring on a changed chord in edit mode. `honey-tint` / `honey-line` for the capo pill, primary actions (link-box "Make sheet", "Create", "Search", "Start tuner", "Play from the start", "Log in with Spotify"), queued row actions, the pressed loop button, the string being played on the tuner, playlist count tiles, looped lyric rows (at 45% alpha) and text selection.
-- **Rosewood** (`rose`): text on honey surfaces and on the current line's chord pills; the current tab's icon on the phone tab bar.
+- **Rosewood** (`rose`): text on honey surfaces and on the current line's chord pills; the next lyric line on the large sheet; the current tab's icon on the phone tab bar.
 
 ### Tertiary
 - **Abalone** (conic gradient of teal, sea-green, slate blue, lilac, cream-green; in the sidecar): only inside the rosette ring around the play button, the brand mark, the passcode screen mark, the processing disc and the tuner dial.
@@ -306,19 +306,21 @@ A warm, low-chroma wood palette with two small accents that each mean one family
 - One-off: 10.5px for the "no diagram" text inside an empty chord box.
 
 ### Named Rules
-**The Small Type Rule.** Nothing but titles and the tuner's note exceeds 17px. Hierarchy comes from weight and ink step, not size.
+**The Small Type Rule.** While browsing, nothing but titles and the tuner's note exceeds 17px. Hierarchy comes from weight and ink step, not size.
 
-**The Pale Lyric Rule.** Lyrics are light weight and pale (`ink-4`), step to `ink-3` for the next line and to full `ink` at 400 for the current line. Chinese characters join without the word gap.
+**The Large Sheet Rule** (owner-chosen, 2026-11-14). The "Large" pill or the S key sizes the song page for arm's length, and the choice is remembered across songs and reloads; the first press of play turns it on if no choice was ever made. Large: lyrics 21px, chord pills 15px / 700 with 6px 9px padding and an 8px radius (7px 11px on chord-only rows), pill slot 35px; resting lines `ink-2`, the next line rosewood (`rose`); the column widens to 940px and a wrapped line hangs in 1.4em; diagrams 84px with 15px names (desktop widths only); the capo number in the player and the "Capo 3" by the title go to 15px.
+
+**The Pale Lyric Rule** (darkened one step, owner-chosen 2026-11-14). Lyrics are light weight and pale (`ink-3`), step to `ink-2` for the next line and to full `ink` at 400 for the current line. Chinese characters join without the word gap.
 
 ## Layout
 
-A 248px sidebar (mark, nav of Your songs / Playlists / Tuner / Spotify, link box, your songs, playlists, recently played) beside a scrolling main area. Content sits in a centred column (max 700px; padding 34px 40px 150px; the bottom room clears the player). Chord diagrams scroll sideways and bleed to the column edge. The floating player, or the edit bar in its place, is centred over the main area, not the window, and a 110px cream fade sits under it while a song is open (dropped in edit mode). A song opened from a playlist gets a one-line context bar above its title: playlist name, "2 of 5", Previous and Next pills.
+A 248px sidebar (mark, nav of Your songs / Playlists / Tuner / Spotify, link box, your songs, playlists, recently played) beside a scrolling main area. Content sits in a centred column (max 700px; padding 34px 40px 150px; the bottom room clears the player). Chord diagrams scroll sideways, bleed to the column edge, and stick to the top of the main area (cream ground, soft hairline below) while the sheet scrolls under them. The floating player, or the edit bar in its place, is centred over the main area, not the window, and a 110px cream fade sits under it while a song is open (dropped in edit mode). A song opened from a playlist gets a one-line context bar above its title: playlist name, "2 of 5", Previous and Next pills.
 
 The tuner stacks centred with 18px gaps: dial, meter (max 420px), reading, string chips, Start.
 
 Spacing is small and close: 1px between list rows, 6px between pills and sheet rows, 12px between diagrams and inside list rows, 18px between sidebar groups, tabs and tuner parts.
 
-At 760px and below (phones) the sidebar becomes a fixed bottom tab bar: four equal columns, 52px tall items, 21px icons over 11px labels, cream with a 1px hairline on top, padded by the bottom safe area; the mark, link box and sidebar lists hide and live on their own pages. The column padding becomes 18px sides, top safe area plus 18px, and tab bar plus 110px at the bottom. The song's pill row stops wrapping and scrolls sideways in one row, bleeding 18px to the edges with no scrollbar. The player and edit bar span the width less 20px and sit 8px above the tab bar. The Add to playlist menu becomes a bottom sheet 10px from the sides and 10px above the tab bar.
+At 760px and below (phones) the sidebar becomes a fixed bottom tab bar: four equal columns, 52px tall items, 21px icons over 11px labels, cream with a 1px hairline on top, padded by the bottom safe area; the mark and sidebar lists hide and live on their own pages, and the link box moves to the top of the Your songs page. The column padding becomes 18px sides, top safe area plus 18px, and tab bar plus 110px at the bottom. The song's pill row (Capo, Transpose, More) wraps as it does on a desktop. The player and edit bar span the width less 20px and sit 8px above the tab bar. The More and Add to playlist menus become a bottom sheet 10px from the sides and 10px above the tab bar.
 
 Under `(pointer: coarse)`, whatever the width, targets grow for a thumb: pills and row actions 36px (big pills 42px) at 13px, stepper buttons 30px, icon buttons 42px, play 46px, player 62px, timeline 36px, string chips 44 x 40px, touch tabs 14px, and chord pills, add slots and chips in edit mode to about 14px type with 12px padding.
 
@@ -369,31 +371,32 @@ Borderless and soft; they whisper until they sound.
 - **Add slot:** transparent, `ink-3` "+", 1px dashed `ink-4` outline, 7px radius, 12px type.
 
 ### Edit Bar
-Takes the player's place, same Float shadow and 17px radius, paper, up to 620px wide. One row holds the message or a 32px cream input (14px / 600; teal outline on focus, red border when invalid) with Remove and Done; below, a wrapping row of chord chips (`pill` fill, 11.5px, 7px radius, `pill-now` and rosewood on hover); Cancel and Save pills close the mode.
+Takes the player's place, same Float shadow and 17px radius, paper, up to 620px wide. A rosette play button at its left plays from the line of the chord or word being edited (Space does the same). One row holds the message or a 32px cream input (14px / 600; teal outline on focus, red border when invalid) with Remove and Done; below, a wrapping row of chord chips (`pill` fill, 11.5px, 7px radius, `pill-now` and rosewood on hover); Cancel and Save pills close the mode.
 
 ### Pills and Buttons
 - **Shape:** 27px tall, 9px radius, 1px `line` border on paper, Label type.
 - **Honey:** honey tint with honey-line border and rosewood text: capo, primary actions such as "Play from the start", "Start tuner", "Log in with Spotify" (34px "big" size, 12.5px).
-- **Quiet:** transparent with `ink-2` text (Reset, Delete playlist).
+- **Quiet:** transparent with `ink-2` text (Reset, Delete playlist, and Cancel under the processing steps).
 - **Hover:** border darkens to `ink-4`. Disabled: 55% opacity; a disabled Previous/Next in the context bar sits at 40%.
-- **Stepper:** a pill holding 19px square minus/plus buttons on 8% rosewood, tabular number between.
+- **Stepper:** a pill holding 19px square minus/plus buttons on 8% rosewood, tabular number between. The capo stepper ends in a small "Auto" button (11px / 600, same fill) that picks the capo with the easiest shapes.
+- **Song pill row:** only Transpose, Large (a toggle, honey tint when on), More and Reset (when capo or transpose is set). The capo lives in the floating player. More opens a menu of Edit chords, Add to playlist, Tune the guitar, Save as text, Save as a web page, Make again and Delete song; it reads "Saved" for 2s after chord edits are saved. Make again and Delete song are plain options like the rest (no clay red: that is for errors only), each asks first with a native confirm that names the song and says what is replaced or where it goes, and both are hidden on the hosted copy.
 - **Row action:** the same pill shape; turns honey on row hover; teal tint when the song is already made ("Open"); honey when queued.
-- **Icon button:** 32px, 9px radius, `ink-2`, `line-soft` on hover, honey tint when pressed; a 28px small size moves and removes songs in a playlist (30% opacity when disabled).
+- **Icon button:** 32px, 9px radius, `ink-2`, `line-soft` on hover, honey tint when pressed; a 28px small size moves and removes songs in a playlist (30% opacity when disabled; 40px on touch).
 
 ### Link Box and Search
 Paper field, 34px, 10px radius, 1px `line` border darkening to `ink-4` on focus; a small honey button sits inside it ("Make sheet"). The same field at 38px (13px text) creates a playlist, renames one and searches Spotify; 40px on the passcode screen; 42px on phones.
 
 ### Add to Playlist Menu
-A paper panel (12px radius, 6px padding, Menu shadow, at least 230px) under its pill. Options are 12.5px / 500 rows with a 16px checkbox (inset `ink-4` ring; teal fill with a paper tick when the song is in that list), `line-soft` on hover; a 32px link box at the foot names a new playlist. On phones it is a bottom sheet with 15px options and 12px 10px padding.
+A paper panel (12px radius, 6px padding, Menu shadow, at least 230px) under the More pill, taking the More menu's place when Add to playlist is chosen there. Options are 12.5px / 500 rows with a 16px checkbox (inset `ink-4` ring; teal fill with a paper tick when the song is in that list), `line-soft` on hover; a 32px link box at the foot names a new playlist. On phones it is a bottom sheet with 15px options and 12px 10px padding.
 
 ### Navigation
-Sidebar links: 13px / 500 `ink-2` with 16px stroked SVG icons, 9px radius. Hover: paper at 60%. Current: paper with a soft hairline ring, 600 weight. Tabs: 12.5px / 600 text on a hairline, the selected tab underlined by a 2px inset ink rule. Phone tab bar: icon over 11px / 600 label, no fill; the current tab goes `ink` with a rosewood icon.
+Sidebar links: 13px / 500 `ink-2` with 16px stroked SVG icons, 9px radius. Hover: paper at 60%. Current: paper with a soft hairline ring, 600 weight. Tabs: 12.5px / 600 text on a hairline, the selected tab underlined by a 2px inset ink rule; a one-line key legend (11.5px, `ink-2`) sits at the right end of the tab row and hides on phones and touch screens. Phone tab bar: icon over 11px / 600 label, no fill; the current tab goes `ink` with a rosewood icon.
 
 ### Lists
 Songs: 44px art, 600 title, `ink-2` artist, a row action or small icon buttons at the end, soft hairline between rows, paper and hairline ring on hover. Sidebar songs: 34px art, 12.5px title. Playlists use a honey-tint count tile (34px in the sidebar, 44px in lists, rosewood tabular number) in the art's place. The Spotify playlist header row puts a back pill and the name at 14px with 12px gaps; "More results" is a pill in a padded row at the list's end.
 
 ### Floating Player (signature)
-Paper, 54px, 17px radius, Float shadow; the rosette play button, current time (ink, 600), a segmented timeline (one segment per line: `line`, teal when done, honey when looped; grows on hover; drag to loop), end time, and a 32px loop icon button (honey tint when pressed).
+Paper, 54px, 17px radius, Float shadow; the rosette play button, current time (ink, 600), a segmented timeline (one segment per line: `line`, teal when done, honey when looped; grows on hover; drag to loop), end time, the honey capo stepper (owner-chosen 2026-11-14, so the capo stays in reach while the sheet scrolls), and a 32px loop icon button (honey tint when pressed). Up to 720px wide, so the timeline keeps its length beside the capo. On phones the capo stepper takes a centred second row.
 
 ### Rosette (signature)
 An ink centre, a thin paper ring and the abalone conic gradient: 17px brand mark, 38px play button (46px on touch), 44px passcode mark, 112px processing disc turning once per 9s, 168px tuner dial. With album art, the disc becomes a 14px-radius art square with a 40px turning rosette badge. The app icon (owner-chosen, 2026-11-13) is a honey celluloid guitar pick tilted -14°, with a faint pearl swirl, a diagonal gloss, a pale bevelled edge, a soft drop, and a pressed tone-on-tone rosette (two rings, no abalone), on cream (source `scripts/icon.html`).
@@ -402,10 +405,10 @@ An ink centre, a thin paper ring and the abalone conic gradient: 17px brand mark
 The 168px rosette dial holds the note in Numeral type; it sits at 55% opacity while idle and gains the teal Tuned ring when in tune. Below, a 46px paper meter (12px radius, inset hairline) with tick marks every 10%, a teal-tint centre band and a 2px teal centre line; the 4px ink needle slides with the cents and turns teal in tune. Six string chips (36 x 32px, 9px radius, 13px / 700): paper with inset hairline at rest, honey when that string is heard, teal when it is in tune. A big honey pill starts and stops.
 
 ### Processing Steps
-Five 6px bars in a row: teal when done, honey and breathing (1.6s) for the current step, `line` for the rest; the step text below updates in place.
+Five 6px bars in a row: teal when done, honey and breathing (1.6s) for the current step, `line` for the rest; the step text below updates in place. Under it sits one quiet "Cancel" pill, the page's only control. Pressed, it dims (disabled) while the step text reads "Stopping…", and the page returns to Your songs with no error band: a cancel is the owner's choice, not a failure.
 
 ### Chord Diagrams
-56px stroked SVG boxes: `ink-3` grid, `ink` nut, dots, barres and fret numbers; the chord name above in 700 / 12px.
+56px stroked SVG boxes: `ink-3` grid; `ink` nut, open and muted marks, dots, barres and fret numbers; the chord name above in 700 / 12px. A slash chord shows its own shape; where the dataset has none, the plain chord's shape with a 10.5px `ink-2` note under it ("Am7 shape"). The diagram of the chord sounding now sits on a paper tile (9px radius, soft hairline ring) with its name in teal, and the strip scrolls it to the middle.
 
 ### Error Band
 Sticky at the top of the main area, max 620px: error-band fill, 1px error-ring, clay-red 500 text, 11px radius, 9px 14px padding.
@@ -421,7 +424,7 @@ Sticky at the top of the main area, max 620px: error-band fill, 1px error-ring, 
 - **Do** grow targets under `(pointer: coarse)` and keep phone text fields at 16px.
 
 ### Don't:
-- **Don't** give chord pills borders or make them bigger while playing: they stay borderless, 11px, 7px radius. Only edit mode outlines them (an inset ring) and, on touch, enlarges them.
+- **Don't** give chord pills borders, or size them outside the two scales: borderless, 11px and 7px radius while browsing, 15px and 8px radius on the large sheet. Only edit mode outlines them (an inset ring) and, on touch, enlarges them.
 - **Don't** add toolbars or panels around the sheet; controls live in the pill row and one floating bar (player or edit bar, never both).
 - **Don't** go dark, neon or dashboard-like; don't add a monospace chord grid.
 - **Don't** copy the Strum app's logo, name styling or assets.

@@ -37,8 +37,9 @@ class ByTitle(BaseModel):
     duration: float
 
 
-def sync(video_id: str) -> None:
-    """Upload a finished song to the hosted copy's Blob store, when one is set up (see README)."""
+def sync(*video_ids: str) -> None:
+    """Upload these songs (and any the store lacks) and the library index to the hosted copy's Blob store,
+    when one is set up (see README)."""
     if not os.environ.get("BLOB_READ_WRITE_TOKEN"):
         return
     node = shutil.which("node")
@@ -46,7 +47,7 @@ def sync(video_id: str) -> None:
         log.warning("sync skipped: node not found on PATH")
         return
     try:
-        subprocess.Popen([node, str(ROOT / "scripts" / "sync.mjs"), video_id], cwd=ROOT)
+        subprocess.Popen([node, str(ROOT / "scripts" / "sync.mjs"), *video_ids], cwd=ROOT)
     except OSError:
         log.exception("sync could not start")
 
@@ -65,14 +66,20 @@ def make(request: dict, progress) -> tuple[dict | None, str | None]:
 
 def work(job: dict, request: dict) -> None:
     def progress(i: int, name: str) -> None:
+        if job["cancel"]:  # the pipeline calls this between steps and while demucs runs
+            raise pipeline.Cancelled
         job["step_name"], job["step"] = name, i
 
-    sheet, error = make(request, progress)
+    cancelled = False
+    try:
+        sheet, error = make(request, progress)
+    except pipeline.Cancelled:  # the pipeline has already removed its temp folder
+        sheet, error, cancelled = None, None, True
     # Release before publishing the terminal state so a client that sees it can POST again;
     # status is written last so a poll never sees "done"/"error" with sheet/error still unset.
     busy.release()
     job["sheet"], job["error"] = sheet, error
-    job["status"] = "error" if error else "done"
+    job["status"] = "cancelled" if cancelled else "error" if error else "done"
     if isinstance(sheet, dict) and sheet.get("video_id"):  # after publishing: an upload can never hold up the job
         sync(sheet["video_id"])
 
@@ -153,20 +160,33 @@ def config():
     return {"spotify_client_id": os.environ.get("SPOTIFY_CLIENT_ID", ""), "can_make": True}
 
 
-@app.post("/api/songs")
-def create(body: ByUrl | ByTitle):
+def start(request: dict, video_id: str | None = None) -> dict:
     if not busy.acquire(blocking=False):
         raise HTTPException(409, "Another song is still processing.")
-    job = {"status": "running", "step": 0, "step_name": pipeline.STEPS[0],
-           "steps": len(pipeline.STEPS), "error": None, "sheet": None}
+    job = {"status": "running", "step": 0, "step_name": pipeline.STEPS[0], "steps": len(pipeline.STEPS),
+           "error": None, "sheet": None, "cancel": False, "video_id": video_id}  # video_id: the song being made again
     job_id = uuid4().hex
     jobs[job_id] = job
     try:
-        threading.Thread(target=work, args=(job, body.model_dump()), daemon=True).start()
+        threading.Thread(target=work, args=(job, request), daemon=True).start()
     except BaseException:
         busy.release()
         raise
     return {"id": job_id}
+
+
+@app.post("/api/songs")
+def create(body: ByUrl | ByTitle):
+    return start(body.model_dump())
+
+
+@app.post("/api/songs/{job_id}/cancel")
+def cancel(job_id: str):
+    """Ask a running job to stop. It ends as "cancelled" once the step it is in lets go (see pipeline.run)."""
+    if job_id not in jobs:
+        raise HTTPException(404, "Unknown song.")
+    jobs[job_id]["cancel"] = True  # a job that already finished stays as it ended
+    return jobs[job_id]
 
 
 @app.get("/api/songs/{job_id}")
@@ -178,7 +198,7 @@ def status(job_id: str):
 
 @app.get("/api/library")
 def library():
-    """Saved sheets, newest first, without their rows."""
+    """Saved sheets, newest first, without their rows. Deleted songs sit one level down, in data/trash/<id>/."""
     songs = []
     for f in pipeline.DATA.glob("*/sheet.json"):
         try:
@@ -210,12 +230,48 @@ def save_sheet(doc: dict) -> None:
         tmp.replace(folder / name)
 
 
-# Hand edits to a song's chords (rules in api/_edit.js, shared with the website).
-@app.put("/api/songs/{video_id}/chords")
-def edit_chords(video_id: str, body: ChordEdits):
+def saved(video_id: str) -> Path:
+    """A finished song's sheet.json, or 404."""
     f = pipeline.DATA / video_id / "sheet.json"
     if not VID.match(video_id) or not f.is_file():
         raise HTTPException(404, "Unknown song.")
+    return f
+
+
+@app.post("/api/songs/{video_id}/remake")
+def remake(video_id: str):
+    """Make a finished song again from its own video. The old sheet stays until the new one is complete,
+    then moves to data/trash/."""
+    doc = json.loads(saved(video_id).read_text(encoding="utf-8"))
+    return start({"url": pipeline.WATCH + video_id, "artist": doc.get("artist") or "", "title": doc.get("title") or "",
+                  "force": True}, video_id)
+
+
+@app.delete("/api/songs/{video_id}")
+def delete(video_id: str):
+    """Move a finished song to data/trash/ and take it out of every playlist."""
+    saved(video_id)
+    if any(j["status"] == "running" and j["video_id"] == video_id for j in jobs.values()):
+        raise HTTPException(409, "This song is being made again. Cancel that first.")
+    pipeline.trash(video_id)
+    try:  # the song is gone either way; a playlist that still names it just skips it
+        got = node_script("playlists.mjs", "get", timeout=30)
+        lists = json.loads(got.stdout)
+        kept = [p | {"songs": [s for s in p["songs"] if s != video_id]} for p in lists["playlists"]]
+        if kept != lists["playlists"]:
+            put = node_script("playlists.mjs", "put", lists["etag"] or "-", timeout=30, stdin=json.dumps(kept))
+            if put.returncode != 0:
+                log.warning("delete: playlists not updated: %s", put.stderr.strip()[-300:])
+    except (OSError, ValueError, KeyError, TypeError, subprocess.TimeoutExpired):
+        log.exception("delete: playlists not updated")
+    sync()  # the website's library index is rewritten without the song; its files stay in the Blob store
+    return {"trashed": f"data/trash/{video_id}"}
+
+
+# Hand edits to a song's chords (rules in api/_edit.js, shared with the website).
+@app.put("/api/songs/{video_id}/chords")
+def edit_chords(video_id: str, body: ChordEdits):
+    f = saved(video_id)
     out = node_script("edit.mjs", "apply", stdin=json.dumps({"sheet": json.loads(f.read_text(encoding="utf-8")), "ops": body.ops}))
     if out.returncode == 2:
         raise HTTPException(422, out.stderr.strip() or "Those chords don't look right.")

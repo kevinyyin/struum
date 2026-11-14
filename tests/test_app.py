@@ -249,3 +249,80 @@ def test_queue_pulls_a_sheet_edited_on_the_website(monkeypatch, tmp_path):
     assert app_module.serve_queue_once() == "made"
     assert json.loads((tmp_path / vid / "sheet.json").read_text()) == edited
     assert calls[-2:] == [("sync.mjs", "--sheet", vid), ("queue.mjs", "finish", "q2", "done", vid)]
+
+
+def test_cancel_stops_a_running_job_and_frees_the_lock(monkeypatch):
+    def fake(request, progress):
+        while True:  # stands in for the pipeline: progress is its cancel check
+            progress(1, "Separating stems")
+            time.sleep(0.01)
+
+    job_id = start(monkeypatch, fake)
+    assert client.get(f"/api/songs/{job_id}").json()["status"] == "running"
+    assert client.post(f"/api/songs/{job_id}/cancel").status_code == 200
+    body = wait_done(job_id)
+    assert (body["status"], body["error"], body["sheet"]) == ("cancelled", None, None)
+    done = start(monkeypatch, lambda request, progress: {})  # not 409: the lock was released
+    assert wait_done(done)["status"] == "done"
+    assert client.post(f"/api/songs/{done}/cancel").json()["status"] == "done"  # too late: it stays as it ended
+    assert client.post("/api/songs/unknown/cancel").status_code == 404
+
+
+def song_on_disk(tmp_path, vid="abcdefghijk"):
+    import json
+    (tmp_path / vid).mkdir()
+    (tmp_path / vid / "sheet.json").write_text(json.dumps({"video_id": vid, "title": "T", "artist": "A", "rows": []}))
+    return vid
+
+
+def test_delete_moves_the_song_to_the_trash_and_out_of_playlists(monkeypatch, tmp_path):
+    import json
+    synced = []
+    monkeypatch.setattr(app_module, "sync", lambda *ids: synced.append(ids))
+    monkeypatch.delenv("BLOB_READ_WRITE_TOKEN", raising=False)
+    monkeypatch.setenv("STRUM_PLAYLISTS_FILE", str(tmp_path / "playlists.json"))
+    monkeypatch.setattr(pipeline, "DATA", tmp_path)
+    vid = song_on_disk(tmp_path)
+    lists = [{"id": "p1", "name": "Warm-up", "songs": [vid, "3-DteAHyRnI"]}, {"id": "p2", "name": "Other", "songs": []}]
+    assert client.put("/api/playlists", json={"playlists": lists, "etag": None}).status_code == 200
+
+    r = client.delete(f"/api/songs/{vid}")
+    assert r.status_code == 200 and r.json() == {"trashed": f"data/trash/{vid}"}
+    assert not (tmp_path / vid).exists()
+    assert json.loads((tmp_path / "trash" / vid / "sheet.json").read_text())["title"] == "T"  # recoverable
+    assert client.get("/api/library").json() == []  # the trash is not a song
+    assert [p["songs"] for p in client.get("/api/playlists").json()["playlists"]] == [["3-DteAHyRnI"], []]
+    assert synced == [()]  # the website's library index is rewritten; no song is re-uploaded
+    assert client.delete(f"/api/songs/{vid}").status_code == 404
+    assert client.delete("/api/songs/..%2Ftrash").status_code == 404
+    assert client.delete("/api/songs/trash").status_code == 404
+
+    monkeypatch.setattr(app_module, "node_script", lambda *a, **kw: __import__("subprocess").CompletedProcess(a, 1, "", "down"))
+    song_on_disk(tmp_path)  # made again and deleted again: the older trashed copy is replaced
+    assert client.delete(f"/api/songs/{vid}").status_code == 200  # playlists unreachable: the song still goes
+    assert not (tmp_path / vid).exists() and (tmp_path / "trash" / vid).is_dir()
+
+
+def test_remake_forces_the_pipeline_and_blocks_delete_meanwhile(monkeypatch, tmp_path):
+    monkeypatch.setattr(pipeline, "DATA", tmp_path)
+    monkeypatch.delenv("BLOB_READ_WRITE_TOKEN", raising=False)
+    vid = song_on_disk(tmp_path)
+    seen, gate = [], threading.Event()
+
+    def fake(request, progress):
+        seen.append(request)
+        gate.wait(5)
+        return {"video_id": vid, "rows": [1]}
+
+    monkeypatch.setattr(pipeline, "run", fake)
+    try:
+        job_id = client.post(f"/api/songs/{vid}/remake").json()["id"]
+        assert client.get(f"/api/songs/{job_id}").json()["video_id"] == vid
+        assert client.delete(f"/api/songs/{vid}").status_code == 409  # or the new sheet would bring it back
+        assert client.post(f"/api/songs/{vid}/remake").status_code == 409  # one job at a time
+    finally:
+        gate.set()
+    assert wait_done(job_id)["sheet"] == {"video_id": vid, "rows": [1]}
+    assert seen == [{"url": "https://www.youtube.com/watch?v=" + vid, "artist": "A", "title": "T", "force": True}]
+    assert client.post("/api/songs/zzzzzzzzzzz/remake").status_code == 404
+    assert client.delete(f"/api/songs/{vid}").status_code == 200  # finished: it can go

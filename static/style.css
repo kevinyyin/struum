@@ -69,6 +69,8 @@ main { position: relative; overflow-y: auto; scroll-behavior: smooth; }
 .col { max-width: 700px; margin: 0 auto; padding: 34px 40px 150px; }
 h1 { font-weight: 800; font-size: 26px; letter-spacing: -0.025em; line-height: 1.1; text-wrap: balance; }
 .by { font-size: 13px; color: var(--ink-2); margin-top: 3px; }
+.by b { color: var(--ink); font-weight: 700; }
+.by .pill { margin-left: 10px; }
 .by a { color: var(--ink-2); text-decoration-color: var(--line); text-underline-offset: 3px; }
 .by a:hover { color: var(--ink); text-decoration-color: var(--ink-3); }
 .error { position: sticky; top: 14px; z-index: 2; max-width: 620px; margin: 14px auto 0; padding: 9px 14px; border-radius: 11px; background: #f6e2da; color: var(--red); font-weight: 500; box-shadow: 0 0 0 1px #ecc9bd; }
@@ -83,25 +85,34 @@ h1 { font-weight: 800; font-size: 26px; letter-spacing: -0.025em; line-height: 1
 button.pill:hover { border-color: var(--ink-4); }
 .pill.honey { background: var(--honey-tint); border-color: var(--honey-line); color: var(--rose); }
 .pill.quiet { background: transparent; color: var(--ink-2); }
+.pill[aria-pressed="true"] { background: var(--honey-tint); border-color: var(--honey-line); color: var(--rose); }
 .pill.big { height: 34px; padding: 0 14px; font-size: 12.5px; margin-top: 14px; }
 .stepper { padding-right: 4px; }
 .stepper button { width: 19px; height: 19px; border-radius: 6px; border: 0; display: grid; place-items: center; background: rgb(90 53 34 / 0.08); padding: 0; color: inherit; }
 .stepper svg { width: 9px; height: 9px; }
 .stepper button:hover { background: rgb(90 53 34 / 0.16); }
+.stepper .auto { width: auto; padding: 0 6px; margin-left: 2px; font-size: 11px; font-weight: 600; }
 .stepper output { min-width: 16px; text-align: center; font-variant-numeric: tabular-nums; }
 
 /* tabs */
 .tabs { display: flex; gap: 18px; margin-top: 20px; border-bottom: 1px solid var(--line); }
+.tabs > div { display: flex; gap: inherit; }
+.keys { margin-left: auto; align-self: flex-end; padding-bottom: 8px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11.5px; color: var(--ink-2); }
 .tabs button { border: 0; background: none; padding: 0 0 8px; font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
 .tabs button:hover { color: var(--ink); }
 .tabs button[aria-selected="true"] { color: var(--ink); box-shadow: inset 0 -2px 0 var(--ink); }
 
 /* chord shapes */
-.shapes { display: flex; gap: 12px; margin: 16px -40px 2px; padding: 0 40px 6px; overflow-x: auto; scroll-padding: 0 40px; }
-.shape { flex: none; }
-.shape { display: grid; justify-items: center; font-weight: 700; font-size: 12px; min-width: 52px; }
+/* the strip stays in sight while the sheet scrolls under it */
+.shapes { display: flex; gap: 4px; margin: 6px -40px 2px; padding: 10px 40px 6px; overflow-x: auto; scroll-padding: 0 40px; scroll-behavior: smooth;
+  position: sticky; top: 0; z-index: 1; background: var(--ground); box-shadow: 0 1px 0 var(--line-soft); }
+.shape { flex: none; display: grid; justify-items: center; font-weight: 700; font-size: 12px; min-width: 60px; padding: 5px 2px 0; border-radius: 9px;
+  transition: background-color .25s var(--ease), color .25s var(--ease), box-shadow .25s var(--ease); }
+.shape small { font-weight: 500; font-size: 10.5px; color: var(--ink-2); }
+.shape.now { background: var(--paper); box-shadow: 0 0 0 1px var(--line-soft); color: var(--teal); }
 .shape svg { width: 56px; height: auto; margin-bottom: -14px; }
 .shape svg g { stroke: var(--ink-3); }
+.shape svg g > circle, .shape svg g > path, .shape svg g > line[stroke-width="4.5"] { stroke: var(--ink); } /* open, muted and the nut */
 .shape svg > line { stroke: var(--ink); }
 .shape svg > circle, .shape svg text { fill: var(--ink); }
 .shape .none { width: 56px; height: 58px; display: grid; place-items: center; color: var(--ink-4); font-size: 10.5px; text-align: center; }
@@ -113,9 +124,9 @@ button.pill:hover { border-color: var(--ink-4); }
 .sheet { margin-top: 24px; display: grid; gap: 6px; }
 .label { font-size: 12.5px; font-weight: 700; margin: 10px 0 -2px; }
 .row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 2px 0.62em; padding: 4px 8px; margin: 0 -8px; border-radius: 10px; cursor: pointer;
-  font: 300 16px/1.25 var(--lyric); letter-spacing: 0.01em; color: var(--ink-4); transition: color .35s var(--ease), background-color .35s var(--ease); }
+  font: 300 16px/1.25 var(--lyric); letter-spacing: 0.01em; color: var(--ink-3); transition: color .35s var(--ease), background-color .35s var(--ease); }
 .row:hover { background: rgb(251 248 242 / 0.55); }
-.row.next { color: var(--ink-3); }
+.row.next { color: var(--ink-2); }
 .row.now { color: var(--ink); font-weight: 400; }
 .row.loop { background: rgb(243 226 194 / 0.45); }
 .row.loop:hover { background: rgb(243 226 194 / 0.7); }
@@ -129,6 +140,24 @@ button.pill:hover { border-color: var(--ink-4); }
 .row.inst .chord { padding: 6px 9px; }
 .row.now .chord { color: var(--rose); background: var(--pill-now); }
 .chord.now, .row.now .chord.now { background: var(--teal); color: var(--paper); box-shadow: 0 3px 8px -3px rgb(47 107 106 / 0.6); transform: translateY(-1px); }
+/* the large sheet: sized for arm's length, switched by its pill or S and remembered */
+.large-sheet .row { font-size: 21px; }
+.large-sheet .row:not(.now) { color: var(--ink-2); }
+.large-sheet .row.next { color: var(--rose); }
+.large-sheet .c { height: 35px; }
+.large-sheet .chord { font-size: 15px; font-weight: 700; padding: 6px 9px; border-radius: 8px; }
+.large-sheet .row.inst .chord { padding: 7px 11px; }
+/* a wrapped line hangs in from the left, so it does not read as a new line */
+.large-sheet .row:not(.inst) { padding-left: calc(8px + 1.4em); }
+.large-sheet .row:not(.inst) > .w:first-child { margin-left: -1.4em; }
+.large-sheet #view-song { max-width: 940px; }
+.large-sheet .by b, .large-sheet .player .stepper output { font-size: 15px; }
+.large-sheet .player .stepper output { font-weight: 800; }
+@media (min-width: 761px) {
+  .large-sheet .shape { font-size: 15px; }
+  .large-sheet .shape svg { width: 84px; margin-bottom: -21px; }
+  .large-sheet .shape small { font-size: 12px; }
+}
 
 /* lists: your songs, spotify */
 .list { list-style: none; padding: 0; margin-top: 8px; }
@@ -161,7 +190,7 @@ button.pill:hover { border-color: var(--ink-4); }
 .addpl { position: relative; display: inline-flex; }
 .menu { position: absolute; top: calc(100% + 6px); left: 0; z-index: 4; min-width: 230px; background: var(--paper); border-radius: 12px; padding: 6px;
   box-shadow: 0 0 0 1px var(--line), 0 14px 30px -14px rgb(70 40 15 / 0.35); display: grid; gap: 1px; }
-.menu .opt { display: flex; align-items: center; gap: 9px; width: 100%; border: 0; background: none; padding: 7px 8px; border-radius: 8px; font-weight: 500; font-size: 12.5px; text-align: left; }
+.menu .opt { text-decoration: none; display: flex; align-items: center; gap: 9px; width: 100%; border: 0; background: none; padding: 7px 8px; border-radius: 8px; font-weight: 500; font-size: 12.5px; text-align: left; }
 .menu .opt:hover, .menu .opt:focus-visible { background: var(--line-soft); }
 .menu .check { width: 16px; height: 16px; border-radius: 5px; box-shadow: inset 0 0 0 1.5px var(--ink-4); display: grid; place-items: center; flex: none; color: var(--paper); }
 .menu [aria-checked="true"] .check { background: var(--teal); box-shadow: none; }
@@ -200,7 +229,10 @@ button.pill:hover { border-color: var(--ink-4); }
 
 /* chord editing */
 .editbar { position: fixed; left: calc(248px + (100vw - 248px) / 2); bottom: 22px; transform: translateX(-50%); width: min(620px, calc(100vw - 248px - 32px)); z-index: 3;
-  background: var(--paper); border-radius: 17px; padding: 10px 10px 10px 16px; box-shadow: 0 0 0 1px var(--line), 0 16px 36px -18px rgb(70 40 15 / 0.35); }
+  background: var(--paper); border-radius: 17px; padding: 10px; box-shadow: 0 0 0 1px var(--line), 0 16px 36px -18px rgb(70 40 15 / 0.35);
+  display: flex; gap: 12px; align-items: flex-start; }
+.editbar .play { flex: none; margin-top: -3px; }
+.editbar .eb-row { flex: 1; min-width: 0; }
 .eb-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .eb-msg { flex: 1; color: var(--ink-2); font-size: 12.5px; }
 .eb-row input { flex: 1; min-width: 120px; height: 32px; border-radius: 9px; border: 1px solid var(--line); background: var(--ground); padding: 0 10px; font-weight: 600; font-size: 14px; }
@@ -228,8 +260,8 @@ body.locked .side { display: none; }
 .paste.login { margin-top: 18px; height: 40px; }
 .paste.login input { font-size: 14px; }
 .paste.login button { font-size: 12.5px; padding: 7px 12px; }
-/* hosted copy: songs are made on the Mac, so there is no link box */
-body.hosted #go { display: none; }
+/* hosted copy: songs are made, made again and deleted on the Mac, so there is no link box and no such menu options */
+body.hosted #go, body.hosted .menu .local { display: none; }
 
 /* processing: a rosette turns while the steps advance in place */
 #view-job { padding-top: 70px; }
@@ -248,9 +280,9 @@ body.hosted #go { display: none; }
 @keyframes breathe { 50% { opacity: 0.45; } }
 
 /* floating player */
-.player { position: fixed; left: calc(248px + (100vw - 248px) / 2); bottom: 22px; transform: translateX(-50%); width: min(540px, calc(100vw - 248px - 32px)); height: 54px; border-radius: 17px;
+.player { position: fixed; left: calc(248px + (100vw - 248px) / 2); bottom: 22px; transform: translateX(-50%); width: min(720px, calc(100vw - 248px - 32px)); min-height: 54px; border-radius: 17px;
   background: var(--paper); z-index: 3; box-shadow: 0 0 0 1px var(--line), 0 16px 36px -18px rgb(70 40 15 / 0.35);
-  display: grid; grid-template-columns: auto auto 1fr auto auto; align-items: center; gap: 12px; padding: 0 10px 0 8px; }
+  display: grid; grid-template-columns: auto auto 1fr auto auto auto; align-items: center; gap: 12px; padding: 0 10px 0 8px; }
 main::after { content: ""; position: fixed; left: 248px; right: 0; bottom: 0; height: 110px; background: linear-gradient(rgb(246 239 227 / 0), var(--ground) 72%); pointer-events: none; z-index: 2; }
 body:not(.playing-view) main::after { display: none; }
 .play { width: 38px; height: 38px; border-radius: 50%; border: 0; display: grid; place-items: center; color: var(--paper);
@@ -278,26 +310,27 @@ body:not(.playing-view) main::after { display: none; }
   body { grid-template-columns: 1fr; grid-template-rows: 1fr; }
   .side { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; display: block; padding: 4px 8px env(safe-area-inset-bottom);
     background: var(--ground); border: 0; border-top: 1px solid var(--line); overflow: visible; }
-  .side .mark, .side #go, .side-group { display: none; }
+  .side .mark, .side-group { display: none; }
+  #view-songs #go { margin: 14px 0 6px; }
   .nav { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; }
   .nav a { flex-direction: column; justify-content: center; gap: 3px; min-height: 52px; padding: 4px 0; font-size: 11px; font-weight: 600; color: var(--ink-2); }
   .nav a svg { width: 21px; height: 21px; }
   .nav a:hover { background: none; }
   .nav a[aria-current="page"] { background: none; box-shadow: none; color: var(--ink); }
   .nav a[aria-current="page"] svg { color: var(--rose); }
-  .col { padding: calc(18px + env(safe-area-inset-top)) 18px calc(var(--tabbar) + 110px); }
+  .col { padding: calc(18px + env(safe-area-inset-top)) 18px calc(var(--tabbar) + 156px); }
   #view-login { padding-top: calc(14vh + env(safe-area-inset-top)); }
   h1 { font-size: 24px; }
-  .shapes { margin-inline: -18px; padding-inline: 18px; }
-  /* song controls: one row that scrolls sideways instead of three rows of pills */
-  .pills { flex-wrap: nowrap; overflow-x: auto; margin-inline: -18px; padding: 2px 18px 6px; scrollbar-width: none; }
-  .pills::-webkit-scrollbar { display: none; }
-  .pills > * { flex: none; }
-  /* Add to playlist opens as a bottom sheet (a dropdown would be cut off by the scrolling row) */
+  .shapes { margin-inline: -18px; padding-inline: 18px; margin-top: calc(6px - env(safe-area-inset-top)); padding-top: calc(10px + env(safe-area-inset-top)); }
+  .keys { display: none; }
+  /* the More and Add to playlist menus open as a bottom sheet */
   .menu { position: fixed; top: auto; left: 10px; right: 10px; bottom: calc(var(--tabbar) + 10px); min-width: 0; padding: 10px; z-index: 6; }
   .menu .opt { padding: 12px 10px; font-size: 15px; }
   .player, .editbar { left: 50%; width: calc(100vw - 20px); bottom: calc(var(--tabbar) + 8px); }
-  main::after { left: 0; bottom: var(--tabbar); }
+  /* the capo takes a second row of the player, so the timeline keeps its width */
+  .player { grid-template-columns: auto auto 1fr auto auto; row-gap: 0; padding-block: 4px 8px; }
+  .player .stepper { grid-row: 2; grid-column: 1 / -1; justify-self: center; }
+  main::after { left: 0; bottom: var(--tabbar); height: 156px; }
   /* iPhone zooms into any text field under 16px */
   .paste input, #sp-q, #eb-name, #pl-new-name, #pl-rename-name, #passcode, .menu input { font-size: 16px; }
   .paste { height: 42px; }
@@ -313,11 +346,13 @@ body:not(.playing-view) main::after { display: none; }
   .stepper svg { width: 11px; height: 11px; }
   .act { height: 36px; padding: 0 14px; font-size: 13px; }
   .tabs { gap: 22px; }
+  .keys { display: none; }
   .tabs button { padding: 8px 0 10px; font-size: 14px; }
   .track { height: 36px; }
   .ico { width: 42px; height: 42px; }
+  .ico.small { width: 40px; height: 40px; }
   .play { width: 46px; height: 46px; background: radial-gradient(circle, var(--ink) 0 18px, var(--paper) 18px 19px, transparent 19px), var(--abalone); }
-  .player { height: 62px; }
+  .player { min-height: 62px; }
   .item { padding-block: 10px; }
   .editing-chords #sheet .chord { padding: 12px 13px; font-size: 14px; min-width: 40px; text-align: center; }
   .editing-chords #sheet .c { height: 46px; }

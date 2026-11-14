@@ -77,32 +77,39 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
     <p class="by" id="job-by"></p>
     <ol class="steps" id="job-steps"></ol>
     <p class="hint" id="job-step"></p>
+    <div class="pills"><button type="button" class="pill quiet" id="job-cancel">Cancel</button></div>
   </section>
 
   <section id="view-song" class="col" hidden>
     <nav class="context" id="pl-context" aria-label="Playlist" hidden></nav>
     <h1 id="title"></h1>
-    <p class="by" id="by"></p>
+    <p class="by"><b id="capo-tag" hidden></b><span id="by"></span></p>
     <div class="pills" id="controls">
-      <div class="pill honey stepper" role="group" aria-label="Capo">
-        <span>Capo</span><button type="button" id="capo-down" aria-label="Capo down"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2 5h6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button><output id="capo">0</output><button type="button" id="capo-up" aria-label="Capo up"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2 5h6M5 2v6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button>
-      </div>
       <div class="pill stepper" role="group" aria-label="Transpose">
         <span>Transpose</span><button type="button" id="tr-down" aria-label="Transpose down"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2 5h6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button><output id="transpose">0</output><button type="button" id="tr-up" aria-label="Transpose up"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2 5h6M5 2v6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button>
       </div>
-      <button type="button" class="pill" id="suggest">Suggest capo</button>
-      <a class="pill" href="#/tuner">Tune</a>
-      <button type="button" class="pill" id="edit-chords">Edit chords</button>
+      <button type="button" class="pill" id="large" aria-pressed="false" aria-label="Large sheet" title="Size the sheet for arm's length (S)">Large</button>
       <div class="addpl">
-        <button type="button" class="pill" id="add-pl" aria-haspopup="true" aria-expanded="false">Add to playlist</button>
+        <button type="button" class="pill" id="more" aria-haspopup="true" aria-expanded="false">More</button>
+        <div class="menu" id="more-menu" role="menu" hidden>
+          <button type="button" class="opt" role="menuitem" id="edit-chords">Edit chords</button>
+          <button type="button" class="opt" role="menuitem" id="add-pl" aria-haspopup="true">Add to playlist</button>
+          <a class="opt" role="menuitem" href="#/tuner">Tune the guitar</a>
+          <a class="opt" role="menuitem" id="save-txt" download>Save as text</a>
+          <a class="opt" role="menuitem" id="save-html" download>Save as a web page</a>
+          <button type="button" class="opt local" role="menuitem" id="remake">Make again</button>
+          <button type="button" class="opt local" role="menuitem" id="delete-song">Delete song</button>
+        </div>
         <div class="menu" id="pl-menu" role="menu" hidden></div>
       </div>
-      <span class="pill" id="save">Save <a id="save-txt">.txt</a> / <a id="save-html">.html</a></span>
       <button type="button" class="pill quiet" id="reset" hidden>Reset</button>
     </div>
-    <div class="tabs" role="tablist">
-      <button type="button" role="tab" id="tab-chords" aria-selected="true" aria-controls="panel-chords">Chords</button>
-      <button type="button" role="tab" id="tab-strum" aria-selected="false" aria-controls="panel-strum">Strumming</button>
+    <div class="tabs">
+      <div role="tablist">
+        <button type="button" role="tab" id="tab-chords" aria-selected="true" aria-controls="panel-chords">Chords</button>
+        <button type="button" role="tab" id="tab-strum" aria-selected="false" aria-controls="panel-strum">Strumming</button>
+      </div>
+      <p class="keys">Space play · ← → line · L loop · Shift ← → longer loop · − + capo · S size</p>
     </div>
     <div id="panel-chords" role="tabpanel" aria-labelledby="tab-chords" class="shapes"></div>
     <div id="panel-strum" role="tabpanel" aria-labelledby="tab-strum" class="strum" hidden></div>
@@ -171,6 +178,10 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
   </section>
 
   <div class="editbar" id="editbar" hidden>
+    <button type="button" class="play" id="eb-play" aria-label="Play" title="Play from the line you are editing (Space)">
+      <svg class="i-play" width="12" height="13" viewBox="0 0 12 13" aria-hidden="true"><path d="M2 1.2v10.6a.8.8 0 0 0 1.2.7l8.4-5.3a.8.8 0 0 0 0-1.4L3.2.5A.8.8 0 0 0 2 1.2z" fill="currentColor"/></svg>
+      <svg class="i-pause" width="11" height="12" viewBox="0 0 11 12" aria-hidden="true"><rect x="1" y=".5" width="3" height="11" rx="1" fill="currentColor"/><rect x="7" y=".5" width="3" height="11" rx="1" fill="currentColor"/></svg>
+    </button>
     <div class="eb-row" id="eb-idle">
       <span class="eb-msg" id="eb-msg">Tap a chord to change it, or a word to add one.</span>
       <button type="button" class="pill quiet" id="eb-cancel">Cancel</button>
@@ -193,7 +204,11 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
     <span class="t" id="t-now">0:00</span>
     <div class="track" id="track" role="slider" tabindex="0" aria-label="Song position. Drag across lines to loop them." aria-valuemin="0"></div>
     <span class="t" id="t-end">0:00</span>
-    <button type="button" class="ico" id="loop" aria-pressed="false" aria-label="Loop the current line" title="Loop a line (L). To loop several, shift-click a line or drag across the bar.">
+    <div class="pill honey stepper" role="group" aria-label="Capo">
+      <span>Capo</span><button type="button" id="capo-down" aria-label="Capo down"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2 5h6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button><output id="capo">0</output><button type="button" id="capo-up" aria-label="Capo up"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2 5h6M5 2v6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button>
+      <button type="button" class="auto" id="suggest" title="Pick the capo with the easiest chord shapes">Auto</button>
+    </div>
+    <button type="button" class="ico" id="loop" aria-pressed="false" aria-label="Loop the current line" title="Loop a line (L). To loop several, hold Shift and press an arrow key, shift-click a line, or drag across the bar.">
       <svg width="16" height="14" viewBox="0 0 18 16" aria-hidden="true"><path d="M3 7.5V6a3 3 0 0 1 3-3h8l-2.5-2.2M15 8.5V10a3 3 0 0 1-3 3H4l2.5 2.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
     <audio id="audio" preload="auto"></audio>

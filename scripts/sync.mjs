@@ -9,7 +9,8 @@ import {FILES, blobPath} from "../api/_auth.js";
 
 const DATA = new URL("../data/", import.meta.url);
 
-// Same rules as app.py's /api/library: finished songs only, newest first.
+// Same rules as app.py's /api/library: finished songs only, newest first. Deleted songs (data/trash/<id>/) are
+// one level down, so they drop out of library.json; their files stay in the store (see README "Hosted copy").
 async function localSongs() {
   const songs = [];
   for (const dir of await readdir(DATA).catch(() => [])) {

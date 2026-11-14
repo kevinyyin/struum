@@ -55,7 +55,18 @@ test("suggestCapo picks the fret with most open shapes", () => {
 test("fingering lookup and diagram", () => {
   const db = JSON.parse(readFileSync(new URL("../static/guitar.json", import.meta.url)));
   for (const n of ["C", "Am", "G7", "F#m", "Bb", "Dsus4", "Em7", "C#", "Gb", "D#m7", "G11", "A13", "C7sus4"]) assert.ok(findFingering(db, n), n);
-  assert.deepEqual(findFingering(db, "C/E"), findFingering(db, "C"));
+  assert.deepEqual(findFingering(db, "C/G").frets, [3, 3, 2, 0, 1, 0]); // its own shape, not plain C
+  assert.deepEqual(findFingering(db, "Bm/F#").frets, [-1, -1, 4, 4, 3, 2]);
+  assert.deepEqual(findFingering(db, "Bm").frets, [-1, 2, 4, 4, 3, 2]); // starts on its root, so it is not the Bm/F# picture
+  assert.deepEqual(findFingering(db, "B").frets, [-1, 2, 4, 4, 4, 2]);
+  assert.deepEqual(findFingering(db, "Cmaj7").frets, [-1, 3, 2, 0, 0, 0]);
+  assert.deepEqual(findFingering(db, "F#m7").frets, [2, 4, 2, 2, 2, 2]); // the barre, not the muted 2x222x
+  assert.deepEqual(findFingering(db, "G").frets, [3, 2, 0, 0, 0, 3]);
+  assert.deepEqual(findFingering(db, "E/Ab"), findFingering(db, "E/G#")); // either spelling of the bass
+  assert.equal(findFingering(db, "C/G").noBass, undefined);
+  assert.deepEqual(findFingering(db, "Am7/G"), {...findFingering(db, "Am7"), noBass: true}); // no such shape: the plain chord, flagged
+  assert.deepEqual(findFingering(db, "Em7").frets, [0, 2, 0, 0, 0, 0]); // not the dataset's first, 0x000x
+  assert.deepEqual(findFingering(db, "C").frets, [-1, 3, 2, 0, 1, 0]);
   assert.deepEqual(findFingering(db, "Gb"), findFingering(db, "F#"));
   assert.equal(findFingering(db, "Cweird13"), null);
   assert.match(diagramSvg(findFingering(db, "C"), "C"), /^<svg[\s\S]*<title>C<\/title>[\s\S]*<\/svg>$/);

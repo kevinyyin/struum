@@ -19,6 +19,18 @@ class PipelineError(Exception):
     pass
 
 
+class Cancelled(BaseException):  # not an Exception: no "except Exception" on the way out may swallow a cancel
+    pass
+
+
+def trash(vid: str) -> None:
+    """Move a song's folder to data/trash/<id> (an older trashed copy is replaced). The library only lists data/*/."""
+    dest = DATA / "trash" / vid
+    shutil.rmtree(dest, ignore_errors=True)
+    dest.parent.mkdir(exist_ok=True)
+    os.replace(DATA / vid, dest)
+
+
 def video_id_from_url(url: str) -> str:
     u = urlparse(url.strip())
     host = (u.hostname or "").removeprefix("www.").removeprefix("m.")
@@ -127,14 +139,27 @@ def download(video_id: str, dest: Path) -> Path:
     return dest / "audio.mp3"
 
 
-def separate(audio: Path, dest: Path) -> tuple[Path, Path]:
+def separate(audio: Path, dest: Path, alive: Callable[[], None] = lambda: None) -> tuple[Path, Path]:
+    """alive is called twice a second while demucs runs; if it raises (a cancel), demucs is stopped."""
     for device in ("mps", "cpu"):
-        r = subprocess.run([sys.executable, "-m", "demucs", "--two-stems", "vocals", "-n", "htdemucs",
-                            "-d", device, "-o", str(dest), str(audio)], capture_output=True, text=True)
-        if r.returncode == 0:
+        p = subprocess.Popen([sys.executable, "-m", "demucs", "--two-stems", "vocals", "-n", "htdemucs",
+                              "-d", device, "-o", str(dest), str(audio)],
+                             stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
+        try:
+            while True:
+                try:
+                    err = p.communicate(timeout=0.5)[1]
+                    break
+                except subprocess.TimeoutExpired:
+                    alive()
+        except BaseException:
+            p.kill()
+            p.wait()
+            raise
+        if p.returncode == 0:
             stems = dest / "htdemucs" / audio.stem
             return stems / "vocals.wav", stems / "no_vocals.wav"
-    raise RuntimeError("demucs failed: " + r.stderr[-500:])
+    raise RuntimeError("demucs failed: " + err[-500:])
 
 
 def detect_chords(no_vocals: Path) -> list[dict]:
@@ -215,19 +240,24 @@ def word_times(vocals: Path, lines: list[dict] | None) -> tuple[list[dict], str]
 
 
 def run(request: dict, progress: Callable[[int, str], None]) -> dict:
+    """request: {"url"} or {"artist", "title", "duration"}; with "force", a song already made is made again.
+    progress doubles as the cancel check: it is called between steps and may raise Cancelled.
+    shortcut: the chord, beat and Whisper models run in this thread and cannot be interrupted, so a cancel waits
+    for the model that is running (seconds; up to a minute while transcribing); run them as child processes if
+    that is too slow."""
     progress(0, STEPS[0])
     if "url" in request:
         vid = video_id_from_url(request["url"])
     else:
         vid = pick_video(search_videos(f"{request['artist']} {request['title']}"), request.get("duration"))["id"]
     folder = DATA / vid
-    if (folder / "sheet.json").exists():
+    if (folder / "sheet.json").exists() and not request.get("force"):
         return json.loads((folder / "sheet.json").read_text(encoding="utf-8"))
     info = video_info(vid)
     if not info.get("duration") or info["duration"] > 900:  # no duration means a live stream
         raise PipelineError("That video is longer than 15 minutes.")
     duration = float(info["duration"])
-    if "url" not in request:
+    if "title" in request:
         artist, title = request["artist"], request["title"]
     elif info.get("artist") and info.get("track"):
         artist, title = info["artist"], info["track"]
@@ -238,12 +268,14 @@ def run(request: dict, progress: Callable[[int, str], None]) -> dict:
     try:
         audio = download(vid, work)
         progress(1, STEPS[1])
-        vocals, no_vocals = separate(audio, work)
+        vocals, no_vocals = separate(audio, work, lambda: progress(1, STEPS[1]))
         progress(2, STEPS[2])
         segments = detect_chords(no_vocals)
+        progress(2, STEPS[2])
         beats, downbeats = detect_beats(no_vocals)
         progress(3, STEPS[3])
         lrc = None if os.environ.get("FORCE_TRANSCRIBE") == "1" else fetch_lyrics(artist, title, duration)
+        progress(3, STEPS[3])
         lines, language = word_times(vocals, lrc)
         progress(4, STEPS[4])
         bpm, beats_per_bar = sheet.tempo(beats, downbeats)
@@ -258,6 +290,8 @@ def run(request: dict, progress: Callable[[int, str], None]) -> dict:
         (work / "sheet.txt").write_text(sheet.render_txt(doc), encoding="utf-8")
         (work / "sheet.html").write_text(sheet.render_html(doc), encoding="utf-8")
         shutil.rmtree(work / "htdemucs")
+        if folder.exists():  # made again: the old sheet stayed in place until now, and is kept in the trash
+            trash(vid)
         os.replace(work, folder)
     except BaseException:
         shutil.rmtree(work, ignore_errors=True)

@@ -33,10 +33,12 @@ Open http://127.0.0.1:8000/ (use `127.0.0.1`, not `localhost`: Spotify only acce
 - **Your songs** (sidebar and its own page) lists every saved sheet, newest first. A song that finished while you were elsewhere gets a teal dot until you open it.
 - **Spotify** has its own page: Recently played, your Spotify **Playlists** (open one to make sheets from its songs; Spotify only shares the songs of playlists you made or collaborate on), Top tracks, Liked, and a search box for any song on Spotify (10 results at a time, Spotify's limit for apps like this) and a quick list of three recent songs in the sidebar. Songs you already made say **Open sheet**; the rest say **Make sheet**.
 - Paste a YouTube link in the sidebar box for anything else.
-- One song is processed at a time; you can browse while it runs.
+- One song is processed at a time; you can browse while it runs. **Cancel** on the progress page stops it and takes you back to your songs. It stops straight away while the audio is being separated; during chord detection or transcription it waits for that model to finish (a few seconds, up to a minute when transcribing).
 - On a song: capo and transpose steppers, **Suggest capo**, chord diagrams and a suggested strum (tabs), and a floating player. The current line darkens and its chord turns teal.
 - **Playlists:** make them on the Playlists page or with **Add to playlist** on any song; reorder and remove songs on the playlist's page. Open a song from a playlist to get Previous / Next, and when a song ends the next one starts. With `BLOB_READ_WRITE_TOKEN` set, playlists are shared between the Mac and the hosted copy (`playlists.json` in the Blob store); without it they live in `data/playlists.json`.
 - **Edit chords** (on a song): tap a chord to change or remove it, tap a word to add one, **+** adds to an intro/solo row; Save keeps them. Type chords as you see them (with your capo/transpose); they are stored in the song's own key, and the .txt/.html are rewritten. Edits made on the website reach the Mac through the queue.
+- **Make again** (More, on a song) runs the song through the models again from the same video and replaces the sheet, including chord edits you saved. The old sheet stays until the new one is complete (a failed or cancelled re-make changes nothing), then moves to `data/trash/`.
+- **Delete song** (More, on a song) takes the song out of Your songs and every playlist and moves its folder to `data/trash/<youtube id>/`. To get it back, move that folder up into `data/` and reload. The trash keeps one copy per song and is never emptied for you; delete `data/trash/` when you want the space.
 - **Tuner** (nav, or **Tune** on a song): standard tuning E A D G B e, shows the nearest string, how many cents flat or sharp, and turns teal when in tune. The microphone is analysed in the browser only.
 - **Practise a part:** the loop button (or `L`) loops the current line; shift-click another line to extend the loop, or drag across the bar to loop several lines. `Space` plays and pauses.
 
@@ -67,6 +69,7 @@ The Vercel project `struum` serves the page and your saved songs so you can open
 - Songs live in a **private** Vercel Blob store (`struum-songs`): `songs/<youtube id>/…` plus `library.json`. Audio streams through short-lived signed links, so seeking works.
 - Everything with your songs is behind a passcode (`STRUM_PASSCODE`, kept in `.env` and in the project's environment variables). The browser remembers it for 30 days. To pick your own, run `scripts/set-passcode.sh` (asks for it, hidden), or write it after `STRUM_PASSCODE=` in `.env` and run `scripts/set-passcode.sh --from-env`. Either way it updates Vercel, redeploys and checks the live site. That logs every browser out.
 - With `BLOB_READ_WRITE_TOKEN` in `.env`, the local server uploads each new song when it finishes. To upload by hand: `node --env-file=.env scripts/sync.mjs` (missing songs) or `… sync.mjs <youtube id>` (re-upload one).
+- **Deleting and re-making** happen on the Mac only; the hosted page's More menu has neither. After a delete the local server rewrites `library.json`, so the hosted page stops listing the song (as does any later sync), and the shared playlists drop it. The song's files (`songs/<youtube id>/…`, audio included) **stay in the Blob store** and still count toward its 1 GB; remove them in the Vercel dashboard if you need the room. A song you bring back from `data/trash/` is listed again after `node --env-file=.env scripts/sync.mjs <youtube id>`. A re-made song is uploaded again over the old files.
 - **Make sheet on the hosted page** queues the song for your Mac. While the local server runs (with `BLOB_READ_WRITE_TOKEN` in `.env`), it checks the queue every 3 minutes (at most 200 checks a day), makes the song, uploads it, and the page shows it when done. Queued songs wait while the Mac is off. The hosted page has no link box; paste links on the Mac.
 - **Free-plan Blob limits** (Hobby, per month): 1 GB storage, 10,000 reads, 2,000 uploads/listings, 10 GB transfer; going over blocks the store for 30 days. The queue check rate, the page's 30-second status checks (only while a song is pending) and the passcode lockout (5 wrong in an hour) are set to stay well inside them.
 - For Spotify on the hosted page, add its address (`https://<your-domain>/`) as a second redirect URI in the Spotify app.
@@ -78,7 +81,7 @@ Open https://struum.vercel.app in Safari, tap Share, then **Add to Home Screen**
 
 ## What you get
 
-Each song is saved in `data/<youtube id>/` as `sheet.json`, `sheet.txt`, `sheet.html` (plus the audio). Processing the same video again returns the saved sheet. `data/` is git-ignored and safe to delete.
+Each song is saved in `data/<youtube id>/` as `sheet.json`, `sheet.txt`, `sheet.html` (plus the audio). Processing the same video again returns the saved sheet, unless you ask with **Make again**. Deleted and replaced songs are in `data/trash/`. `data/` is git-ignored and safe to delete.
 
 - Capo and transpose change the page only; saved files stay in the original key.
 - "Suggest capo" picks the fret 0-7 with the most open shapes. For C G Am F it suggests 5 (G D Em C).
