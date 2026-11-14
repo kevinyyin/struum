@@ -4,5 +4,8 @@
   "type": "module",
   "dependencies": {
     "@vercel/blob": "^2.9.0"
+  },
+  "scripts": {
+    "start": "PATH=/opt/homebrew/bin:$PATH .venv/bin/uvicorn app:app --host 127.0.0.1 --port 8000 --env-file .env"
   }
 }

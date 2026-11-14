@@ -23,8 +23,10 @@ yt-dlp needs a JavaScript runtime to solve YouTube's challenges. Without one it 
 ## Run
 
 ```
-PATH=/opt/homebrew/bin:$PATH .venv/bin/uvicorn app:app --host 127.0.0.1 --port 8000 --env-file .env
+npm start
 ```
+
+(the same as `PATH=/opt/homebrew/bin:$PATH .venv/bin/uvicorn app:app --host 127.0.0.1 --port 8000 --env-file .env`). Leave that Terminal window open while you use it; Ctrl-C stops it.
 
 Open http://127.0.0.1:8000/ (use `127.0.0.1`, not `localhost`: Spotify only accepts the address you registered).
 
