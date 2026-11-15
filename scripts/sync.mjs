@@ -8,6 +8,7 @@ import {list, put} from "@vercel/blob";
 import {FILES, blobPath} from "../api/_auth.js";
 
 const DATA = new URL("../data/", import.meta.url);
+const upload = (path, body, contentType) => put(path, body, {access: "private", addRandomSuffix: false, allowOverwrite: true, contentType});
 
 // Same rules as app.py's /api/library: finished songs only, newest first. Deleted songs (data/trash/<id>/) are
 // one level down, so they drop out of library.json; their files stay in the store (see README "Hosted copy").
@@ -41,17 +42,13 @@ async function uploadSheets(ids) {
   for (const id of ids) {
     for (const file of ["sheet.json", "sheet.txt", "sheet.html"]) {
       const body = await readFile(new URL(`${id}/${file}`, DATA));
-      await put(blobPath(id, file), body, {access: "private", addRandomSuffix: false, allowOverwrite: true, contentType: FILES[file]});
+      await upload(blobPath(id, file), body, FILES[file]);
     }
     console.log(`sync: sheet files for ${id}`);
   }
 }
 
 async function main(ids) {
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
-    console.error("sync: BLOB_READ_WRITE_TOKEN is not set; nothing uploaded.");
-    process.exit(1);
-  }
   const songs = await localSongs();
   const have = await remotePaths();
   for (const s of songs) {
@@ -60,17 +57,18 @@ async function main(ids) {
       if (have.has(path) && !ids.includes(s.video_id)) continue;
       const body = await readFile(new URL(`${s.video_id}/${file}`, DATA)).catch(() => null);
       if (!body) { console.warn(`sync: ${path} missing locally, skipped`); continue; }
-      await put(path, body, {access: "private", addRandomSuffix: false, allowOverwrite: true, contentType: FILES[file]});
+      await upload(path, body, FILES[file]);
       console.log(`sync: uploaded ${path}`);
     }
   }
-  await put("library.json", JSON.stringify(songs), {access: "private", addRandomSuffix: false, allowOverwrite: true,
-    contentType: "application/json; charset=utf-8"});
+  await upload("library.json", JSON.stringify(songs), "application/json; charset=utf-8");
   console.log(`sync: library.json (${songs.length} songs)`);
 }
 
 const args = process.argv.slice(2);
-if (args[0] === "--sheet") {
-  if (!process.env.BLOB_READ_WRITE_TOKEN) { console.error("sync: BLOB_READ_WRITE_TOKEN is not set"); process.exit(1); }
-  await uploadSheets(args.slice(1));
-} else await main(args);
+if (!process.env.BLOB_READ_WRITE_TOKEN) {
+  console.error("sync: BLOB_READ_WRITE_TOKEN is not set; nothing uploaded.");
+  process.exit(1);
+}
+if (args[0] === "--sheet") await uploadSheets(args.slice(1));
+else await main(args);

@@ -139,6 +139,13 @@ button.pill:hover { border-color: var(--ink-4); }
 .row.inst { gap: 7px; }
 .row.inst .chord { padding: 6px 9px; }
 .row.now .chord { color: var(--rose); background: var(--pill-now); }
+#sheet .chord[role="button"] { cursor: pointer; }
+/* a tapped chord's diagram, beside its pill */
+.chord-pop { position: fixed; inset: auto; margin: 0; border: 0; padding: 4px 8px 6px; background: var(--paper); color: var(--ink); border-radius: 12px;
+  box-shadow: 0 0 0 1px var(--line), 0 14px 30px -14px rgb(70 40 15 / 0.35); }
+.chord-pop .shape { font-size: 15px; min-width: 96px; }
+.chord-pop .shape svg { width: 96px; margin-bottom: -24px; }
+.chord-pop .shape small { font-size: 12px; }
 .chord.now, .row.now .chord.now { background: var(--teal); color: var(--paper); box-shadow: 0 3px 8px -3px rgb(47 107 106 / 0.6); transform: translateY(-1px); }
 /* the large sheet: sized for arm's length, switched by its pill or S and remembered */
 .large-sheet .row { font-size: 21px; }
@@ -165,6 +172,14 @@ button.pill:hover { border-color: var(--ink-4); }
 .item + .item { box-shadow: 0 -1px 0 var(--line-soft); }
 .item:hover, .item:focus-within { background: var(--paper); box-shadow: 0 0 0 1px var(--line-soft); }
 .item .art { width: 44px; height: 44px; border-radius: 8px; }
+/* Your songs as a grid of covers */
+#view-songs:has(.list.grid) { max-width: 1180px; } /* covers use the width a list should not */
+.list.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.list.grid .item { position: relative; grid-template-columns: 1fr; gap: 8px; align-items: start; }
+.list.grid .item .art { width: 100%; height: auto; aspect-ratio: 1; border-radius: 10px; }
+.list.grid .item .t { display: none; }
+.list.grid .item .dot { position: absolute; top: 14px; right: 14px; box-shadow: 0 0 0 2px var(--paper); }
+.list.grid .empty { grid-column: 1 / -1; }
 .item b { font-size: 13.5px; }
 .item span.who { font-size: 12px; }
 .act { height: 27px; padding: 0 10px; border-radius: 9px; border: 1px solid var(--line); background: var(--paper); font-weight: 600; font-size: 11.5px; white-space: nowrap; }

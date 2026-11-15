@@ -1,10 +1,11 @@
 // Playlists: one JSON document shared by the website and the Mac (api/playlists.js, scripts/playlists.mjs).
 // Shape: [{id, name, songs: [youtube video id, ...]}]. The whole list is saved at once, only if it has not
 // changed since it was read, so two devices never silently overwrite each other.
+import {VID} from "./_auth.js";
 import {blob, isConflict, loadJson, saveJson} from "./_blobjson.js";
 
 export const PLAYLISTS = "playlists.json";
-const VID = /^[\w-]{6,20}$/, ID = /^[\w-]{1,40}$/;
+const ID = /^[\w-]{1,40}$/;
 
 // The cleaned list, or null when it is not a valid playlist list.
 export function cleanPlaylists(x) {

@@ -1,4 +1,4 @@
-import {startSong, findSong, isBusy, config, canMakeSongs, queuedAs, requestSong, svg} from "/static/app.js";
+import {$, el, startSong, findSong, isBusy, config, canMakeSongs, queuedAs, requestSong, svg} from "/static/app.js";
 
 const REDIRECT = location.origin + "/"; // must match a redirect URI registered on the Spotify app
 const SCOPE = "user-read-recently-played user-top-read user-library-read playlist-read-private playlist-read-collaborative";
@@ -7,13 +7,6 @@ const LISTS = [
   ["Top tracks", "/v1/me/top/tracks?limit=50"],
   ["Liked", "/v1/me/tracks?limit=50"],
 ];
-const $ = (id) => document.getElementById(id);
-const el = (tag, cls, text) => {
-  const e = document.createElement(tag);
-  if (cls) e.className = cls;
-  if (text !== undefined) e.textContent = text; // Spotify text is untrusted: textContent only
-  return e;
-};
 
 // sessionStorage can throw (blocked storage), so every access is guarded.
 const store = {
@@ -22,14 +15,9 @@ const store = {
   del(k) { try { sessionStorage.removeItem(k); } catch {} },
 };
 
-const rand = () => {
-  const a = crypto.getRandomValues(new Uint8Array(32));
-  return btoa(String.fromCharCode(...a)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-};
-const sha256b64url = async (s) => {
-  const h = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)));
-  return btoa(String.fromCharCode(...h)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-};
+const b64url = (bytes) => btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+const rand = () => b64url(crypto.getRandomValues(new Uint8Array(32)));
+const sha256b64url = async (s) => b64url(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s))));
 
 const msg = (s) => { $("sp-msg").textContent = s; };
 let clientId = "";
@@ -254,13 +242,12 @@ function drawQuick() {
 const dedupe = (tracks) => { const seen = new Set(); return tracks.filter((t) => !seen.has(t.id) && seen.add(t.id)); };
 
 async function showLists() {
-  const token = store.get("sp_token");
   msg("Loading your songs…");
   $("sp-side-msg").textContent = "Loading your Spotify songs…";
   let results;
   try {
     results = await Promise.all([...LISTS.map(async ([name, path]) => {
-      const r = await fetch("https://api.spotify.com" + path, {headers: {Authorization: `Bearer ${token}`}});
+      const r = await api(path);
       if (r.status === 401) throw "expired";
       if (r.status === 403) return null; // e.g. liked songs refused: drop that tab
       if (!r.ok) throw new Error(r.status);

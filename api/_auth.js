@@ -7,7 +7,7 @@ export const FILES = {
   "sheet.html": "text/html; charset=utf-8",
   "audio.mp3": "audio/mpeg",
 };
-const VID = /^[\w-]{6,20}$/;
+export const VID = /^[\w-]{6,20}$/;
 
 // Blob pathname for a song file, or null for anything that is not one.
 export const blobPath = (id, file) => (VID.test(id || "") && Object.hasOwn(FILES, file || "") ? `songs/${id}/${file}` : null);

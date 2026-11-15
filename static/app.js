@@ -2,13 +2,13 @@ import {SHARP, CHORD, transpose, spelling, suggestCapo, findFingering, diagramSv
 import {tidy} from "/static/tidy.js";
 import {listen, STRINGS, IN_TUNE} from "/static/tuner.js";
 
-export const current = {sheet: null, shift: 0};
+const current = {sheet: null, shift: 0};
 
-const $ = (id) => document.getElementById(id);
-const el = (tag, cls, text) => {
+export const $ = (id) => document.getElementById(id);
+export const el = (tag, cls, text) => {
   const e = document.createElement(tag);
   if (cls) e.className = cls;
-  if (text !== undefined) e.textContent = text;
+  if (text !== undefined) e.textContent = text; // text from Spotify and YouTube is untrusted: textContent only
   return e;
 };
 const link = (href, text) => { const a = el("a", "", text); a.href = href; return a; };
@@ -38,7 +38,7 @@ let scale = SHARP; // spelling follows the displayed key; set in refresh
 let db = null;
 fetch("/static/guitar.json").then((r) => r.json()).then((j) => { db = j; drawInfo(); }).catch(() => {});
 
-export const setError = (s) => { $("error").textContent = s; };
+const setError = (s) => { $("error").textContent = s; };
 
 // Local server: can_make true. Hosted copy (Vercel): false, and the library sits behind a passcode.
 export const config = fetch("/api/config").then((r) => r.json()).catch(() => ({}));
@@ -49,7 +49,7 @@ let locked = false;
 
 /* ---------- library ---------- */
 
-export let library = [];
+let library = [];
 const SIDE_SONGS = 6; // the sidebar shows the newest few; the Your songs page shows them all
 
 // Sidebar sections fold away; which ones are folded is remembered.
@@ -133,7 +133,7 @@ export function findSong(title, artist) {
   return library.find((s) => norm(s.title) === t && norm(s.artist) === a)?.video_id ?? null;
 }
 
-export const thumb = (id) => {
+const thumb = (id) => {
   const img = el("img", "art");
   img.alt = "";
   img.src = `https://i.ytimg.com/vi/${encodeURIComponent(id)}/mqdefault.jpg`;
@@ -196,8 +196,18 @@ function drawLibrary() {
     ? `${library.length} ${library.length === 1 ? "sheet" : "sheets"}, newest first.`
     : "";
   if (!library.length) list.append(el("li", "empty", "No songs yet. Paste a YouTube link, or pick a song from Spotify."));
+  $("songs-view").hidden = !library.length;
   drawPlaylists();
 }
+
+// Your songs as a list or a grid of covers; the choice is remembered.
+function setSongsView(v) {
+  $("songs-list").classList.toggle("grid", v === "grid");
+  for (const b of $("songs-view").children) b.setAttribute("aria-pressed", String(b.dataset.view === v));
+  store.set("strum_songs_view", v);
+}
+for (const b of $("songs-view").children) b.onclick = () => setSongsView(b.dataset.view);
+setSongsView(store.get("strum_songs_view") === "grid" ? "grid" : "list");
 
 async function loadLibrary() {
   try {
@@ -251,7 +261,7 @@ async function savePlaylists(next) {
   if (r?.status === 409) {
     await loadPlaylists();
     setError("Your playlists changed somewhere else, so they were reloaded. Try that again.");
-  } else setError((await r?.json().catch(() => ({})))?.detail || "Could not save your playlists.");
+  } else { const body = await r?.json().catch(() => ({})); setError(body?.error || body?.detail || "Could not save your playlists."); }
   return false;
 }
 
@@ -508,7 +518,7 @@ function showReading(r) {
   meter.classList.toggle("idle", idle);
   meter.classList.toggle("ok", !!ok);
   strings.forEach((x, i) => {
-    const on = r && STRINGS[i] === STRINGS.find((s) => s.freq === r.string.freq);
+    const on = r && STRINGS[i].freq === r.string.freq;
     x.classList.toggle("on", !!on && !ok);
     x.classList.toggle("ok", !!on && !!ok);
   });
@@ -559,11 +569,10 @@ function changedSlots() {
   const out = new Map(); // key -> names
   if (!editing) return out;
   editing.rows.forEach((row, r) => {
-    const orig = current.sheet.rows[r];
     const slots = row.type === "instrumental" ? [null] : row.words.map((_, k) => k);
     for (const w of slots) {
       const now = slotChords(editing.rows, r, w).map((c) => c.name), was = slotChords(current.sheet.rows, r, w).map((c) => c.name);
-      if (now.join("|") !== was.join("|") || orig.type !== row.type) out.set(slotKey(r, w), {r, w, names: now});
+      if (now.join("|") !== was.join("|")) out.set(slotKey(r, w), {r, w, names: now});
     }
   });
   return out;
@@ -571,6 +580,7 @@ function changedSlots() {
 
 function startEditing() {
   editing = {rows: structuredClone(current.sheet.rows), sel: null};
+  hideChord();
   audio.pause();
   document.body.classList.add("editing-chords");
   $("player").hidden = true;
@@ -623,10 +633,8 @@ function selectSlot(r, w, i) {
 function setSlot(names) {
   const {r, w} = editing.sel;
   const holder = w === null ? editing.rows[r] : editing.rows[r].words[w];
-  const old = w === null ? holder.chords : holder.chords;
-  const start = w === null ? editing.rows[r].start : holder.start ?? editing.rows[r].start;
-  const next = names.map((name, k) => ({name, time: old[k]?.time ?? start}));
-  if (w === null) editing.rows[r].chords = next; else editing.rows[r].words[w].chords = next;
+  const start = holder.start ?? editing.rows[r].start; // shown while editing only; the server sets the saved times
+  holder.chords = names.map((name, k) => ({name, time: holder.chords[k]?.time ?? start}));
   editing.sel = null;
   redrawEditing();
 }
@@ -697,7 +705,7 @@ function show(v) {
   for (const name of VIEWS) $(`view-${name}`).hidden = name !== v;
   $("player").hidden = v !== "song" || !current.sheet;
   document.body.classList.toggle("playing-view", !$("player").hidden);
-  if (v !== "song") { audio.pause(); closeMenu(); if (editing) stopEditing(); } // the player lives on the song page
+  if (v !== "song") { audio.pause(); closeMenu(); hideChord(); if (editing) stopEditing(); } // the player lives on the song page
   if (v !== "tuner") stopTuner(); // the microphone is only on while the tuner page is open
   if (v === "song") settle(); // a sheet drawn while hidden has no layout yet
   if (back && activeRow > 0) rowEls[activeRow]?.scrollIntoView({block: "center", behavior: "instant"});
@@ -762,7 +770,7 @@ async function openSong(id, listId = null) {
 /* ---------- chords, capo, transpose ---------- */
 
 // The only place chord text is drawn.
-export function drawChord(span) {
+function drawChord(span) {
   span.textContent = transpose(span.dataset.name, current.shift, scale); // re-spells at shift 0 too
 }
 
@@ -774,21 +782,47 @@ function drawInfo() {
   const panel = $("panel-chords");
   panel.replaceChildren();
   if (!current.sheet) return;
-  for (const n of new Set(chordEls.map((c) => c.textContent))) {
-    const fig = el("figure", "shape");
-    fig.dataset.name = n;
-    fig.append(el("figcaption", "", n));
-    const pos = db && findFingering(db, n);
-    if (pos) {
-      const box = el("div");
-      box.innerHTML = diagramSvg(pos, n); // numbers and the XML-escaped name only
-      fig.append(box);
-      if (pos.noBass) fig.append(el("small", "", `${n.split("/")[0]} shape`)); // honest: the bass note is not in this picture
-    } else fig.append(el("div", "none", db ? "no diagram" : ""));
-    panel.append(fig);
-  }
+  for (const n of new Set(chordEls.map((c) => c.textContent))) panel.append(shapeFigure(n));
   markShape();
+  if (popFor) showChord(popFor); // capo or transpose renamed it
 }
+
+function shapeFigure(n) {
+  const fig = el("figure", "shape");
+  fig.dataset.name = n;
+  fig.append(el("figcaption", "", n));
+  const pos = db && findFingering(db, n);
+  if (pos) {
+    const box = el("div");
+    box.innerHTML = diagramSvg(pos, n); // numbers and the XML-escaped name only
+    fig.append(box);
+    if (pos.noBass) fig.append(el("small", "", `${n.split("/")[0]} shape`)); // honest: the bass note is not in this picture
+  } else fig.append(el("div", "none", db ? "no diagram" : ""));
+  return fig;
+}
+
+// Tap a chord on the sheet: its diagram pops up beside it. Tapping the rest of the line still jumps there.
+const pop = $("chord-pop");
+let popFor = null;
+const hideChord = () => { popFor = null; if (pop.matches(":popover-open")) pop.hidePopover(); };
+function placeChord() {
+  if (!popFor?.isConnected) return hideChord();
+  const b = popFor.getBoundingClientRect(), w = pop.offsetWidth, h = pop.offsetHeight;
+  pop.style.left = `${clamp(b.left + b.width / 2 - w / 2, 8, innerWidth - w - 8)}px`;
+  pop.style.top = `${b.top - h - 8 >= 8 ? b.top - h - 8 : b.bottom + 8}px`; // above the pill, or below near the top
+}
+function showChord(span) {
+  popFor = span;
+  pop.replaceChildren(shapeFigure(span.textContent));
+  pop.setAttribute("aria-label", `${span.textContent} chord`);
+  if (!pop.matches(":popover-open")) pop.showPopover();
+  placeChord();
+}
+const toggleChord = (span) => (popFor === span ? hideChord() : showChord(span));
+$("main").addEventListener("scroll", () => popFor && placeChord(), {passive: true});
+window.addEventListener("resize", () => popFor && placeChord());
+document.addEventListener("click", (e) => { if (popFor && !e.target.closest("#chord-pop, #sheet .chord")) hideChord(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && popFor) { popFor.focus(); hideChord(); } });
 
 // The diagram of the chord sounding now is lit and scrolled to the middle of its strip.
 function markShape() {
@@ -888,7 +922,7 @@ function chordEl(c) {
   return s;
 }
 
-export function renderSheet(sheet) {
+function renderSheet(sheet) {
   current.sheet = sheet;
   current.shift = 0;
   rowEls = []; chordEls = []; activeRow = -2; activeChord = null; loop = null; // -2: first highlight always marks rows
@@ -938,6 +972,12 @@ function drawRows(data) {
       s.classList.toggle("sel", editing.sel?.r === r && editing.sel?.w === w && editing.sel?.i === i);
       s.onclick = (e) => { e.stopPropagation(); selectSlot(r, w, i); };
       s.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); selectSlot(r, w, i); } };
+    } else {
+      s.tabIndex = 0;
+      s.setAttribute("role", "button");
+      s.setAttribute("aria-haspopup", "dialog");
+      s.onclick = (e) => { e.stopPropagation(); toggleChord(s); };
+      s.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); toggleChord(s); } };
     }
     return s;
   };

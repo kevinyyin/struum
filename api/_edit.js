@@ -4,8 +4,6 @@
 
 import {CHORD} from "../static/chords.js";
 
-export {CHORD};
-
 export class EditError extends Error {}
 
 // Existing chords keep their times; added ones start at the slot's start, extras spread across the slot.

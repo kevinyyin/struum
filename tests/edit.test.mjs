@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { applyChordEdits, EditError, CHORD } from "../api/_edit.js";
+import { applyChordEdits, EditError } from "../api/_edit.js";
+import { CHORD } from "../static/chords.js";
 
 const sheet = () => ({
   title: "t", video_id: "abcdefghijk",
