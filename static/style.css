@@ -173,6 +173,10 @@ button.pill:hover { border-color: var(--ink-4); }
 .item:hover, .item:focus-within { background: var(--paper); box-shadow: 0 0 0 1px var(--line-soft); }
 .item .art { width: 44px; height: 44px; border-radius: 8px; }
 /* Your songs as a grid of covers */
+.songs-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 14px; }
+.songs-tools .paste { flex: 1 1 220px; max-width: 420px; }
+.songs-tools .pills { margin-top: 0; }
+#songs-q::-webkit-search-cancel-button { cursor: pointer; }
 #view-songs:has(.list.grid) { max-width: 1180px; } /* covers use the width a list should not */
 .list.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
 .list.grid .item { position: relative; grid-template-columns: 1fr; gap: 8px; align-items: start; }

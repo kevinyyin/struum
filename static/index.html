@@ -119,9 +119,15 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
   <section id="view-songs" class="col" hidden>
     <h1>Your songs</h1>
     <p class="by" id="songs-sub"></p>
-    <div class="pills" id="songs-view" role="group" aria-label="Show songs as">
-      <button type="button" class="pill" data-view="list" aria-pressed="true">List</button>
-      <button type="button" class="pill" data-view="grid" aria-pressed="false">Grid</button>
+    <div class="songs-tools" id="songs-tools">
+      <form class="paste" id="songs-search" role="search">
+        <label for="songs-q" class="sr">Search your songs</label>
+        <input id="songs-q" type="search" placeholder="Search your songs" autocomplete="off" spellcheck="false">
+      </form>
+      <div class="pills" id="songs-view" role="group" aria-label="Show songs as">
+        <button type="button" class="pill" data-view="list" aria-pressed="true">List</button>
+        <button type="button" class="pill" data-view="grid" aria-pressed="false">Grid</button>
+      </div>
     </div>
     <ul class="list" id="songs-list"></ul>
   </section>

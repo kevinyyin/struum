@@ -184,21 +184,33 @@ function drawLibrary() {
   $("songs-all").textContent = `All ${library.length}`;
   if (!library.length && !job) side.append(el("li", "side-note", "Songs you make show up here."));
 
+  $("songs-sub").textContent = library.length
+    ? `${library.length} ${library.length === 1 ? "sheet" : "sheets"}, newest first.`
+    : "";
+  $("songs-tools").hidden = !library.length;
+  drawSongs();
+  drawPlaylists();
+}
+
+// The Your songs page, narrowed by its search box: title and artist, ignoring case, accents and punctuation.
+const fold = (s) => (s || "").normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+function drawSongs() {
+  const q = fold($("songs-q").value);
+  const shown = q ? library.filter((s) => fold(`${s.title} ${s.artist}`).includes(q)) : library;
   const list = $("songs-list");
-  list.replaceChildren(...library.map((s) => {
+  list.replaceChildren(...shown.map((s) => {
     const li = el("li");
     const a = songLink(s, "item");
     a.append(el("span", "t", s.duration ? fmt(s.duration) : ""));
     li.append(a);
     return li;
   }));
-  $("songs-sub").textContent = library.length
-    ? `${library.length} ${library.length === 1 ? "sheet" : "sheets"}, newest first.`
-    : "";
   if (!library.length) list.append(el("li", "empty", "No songs yet. Paste a YouTube link, or pick a song from Spotify."));
-  $("songs-view").hidden = !library.length;
-  drawPlaylists();
+  else if (!shown.length) list.append(el("li", "empty", `None of your songs match "${$("songs-q").value.trim()}".`));
 }
+$("songs-q").addEventListener("input", drawSongs);
+$("songs-search").addEventListener("submit", (e) => e.preventDefault());
+$("songs-q").addEventListener("keydown", (e) => { if (e.key === "Escape" && $("songs-q").value) { $("songs-q").value = ""; drawSongs(); } });
 
 // Your songs as a list or a grid of covers; the choice is remembered.
 function setSongsView(v) {
