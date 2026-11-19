@@ -279,7 +279,7 @@ def run(request: dict, progress: Callable[[int, str], None]) -> dict:
         lines, language = word_times(vocals, lrc)
         progress(4, STEPS[4])
         bpm, beats_per_bar = sheet.tempo(beats, downbeats)
-        doc = {"video_id": vid, "url": WATCH + vid, "title": title, "artist": artist, "duration": duration, "made": time.time(),
+        doc = {"video_id": vid, "url": WATCH + vid, "title": title, "artist": artist, "duration": duration, "art": request.get("art") or "", "made": time.time(),
                "language": language,
                "lyrics_source": "none" if not lines else "lrclib" if lrc else "transcribed",
                "bpm": float(bpm), "beats_per_bar": int(beats_per_bar),

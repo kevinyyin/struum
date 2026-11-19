@@ -90,6 +90,15 @@ def test_artist_title_duration_accepted(monkeypatch):
     assert seen == {"artist": "a", "title": "t", "duration": 200}
 
 
+def test_spotify_cover_kept_only_from_spotify(monkeypatch):
+    seen = []
+    monkeypatch.setattr(pipeline, "run", lambda request, progress: seen.append(request) or {})
+    cover = "https://i.scdn.co/image/ab67616d00001e02abc"
+    for art in (cover, "https://evil.example/x.jpg", 'https://i.scdn.co/a") url(x'):
+        wait_done(client.post("/api/songs", json={"artist": "a", "title": "t", "duration": 200, "art": art}).json()["id"])
+    assert [r.get("art") for r in seen] == [cover, None, None]
+
+
 def test_unknown_job():
     assert client.get("/api/songs/unknown").status_code == 404
 
@@ -131,7 +140,7 @@ def test_library_lists_finished_songs_newest_first(monkeypatch, tmp_path):
     # a recorded "made" wins over the file time, so rewriting a sheet does not reorder the library
     (tmp_path / "old" / "sheet.json").write_text(json.dumps({"video_id": "old", "title": "OLD", "made": 99}))
     assert [s["video_id"] for s in client.get("/api/library").json()] == ["old", "new"]
-    assert songs[0] == {"video_id": "new", "title": "NEW", "artist": "A", "duration": 9, "made": 2}
+    assert songs[0] == {"video_id": "new", "title": "NEW", "artist": "A", "duration": 9, "art": None, "made": 2}
 
 
 def test_page_files_are_revalidated():
@@ -323,6 +332,6 @@ def test_remake_forces_the_pipeline_and_blocks_delete_meanwhile(monkeypatch, tmp
     finally:
         gate.set()
     assert wait_done(job_id)["sheet"] == {"video_id": vid, "rows": [1]}
-    assert seen == [{"url": "https://www.youtube.com/watch?v=" + vid, "artist": "A", "title": "T", "force": True}]
+    assert seen == [{"url": "https://www.youtube.com/watch?v=" + vid, "artist": "A", "title": "T", "art": "", "force": True}]
     assert client.post("/api/songs/zzzzzzzzzzz/remake").status_code == 404
     assert client.delete(f"/api/songs/{vid}").status_code == 200  # finished: it can go

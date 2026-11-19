@@ -8,11 +8,11 @@ const LISTS = [
   ["Liked", "/v1/me/tracks?limit=50"],
 ];
 
-// sessionStorage can throw (blocked storage), so every access is guarded.
+// localStorage so the login (its refresh token) outlives the tab; it can throw (blocked storage), so every access is guarded.
 const store = {
-  get(k) { try { return sessionStorage.getItem(k); } catch { return null; } },
-  set(k, v) { try { sessionStorage.setItem(k, v); } catch {} },
-  del(k) { try { sessionStorage.removeItem(k); } catch {} },
+  get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+  del(k) { try { localStorage.removeItem(k); } catch {} },
 };
 
 const b64url = (bytes) => btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
@@ -25,7 +25,13 @@ let tabs = []; // [{name, tracks}]
 let tabIndex = 0;
 let found = null; // {query, tracks, more} while a search is showing, instead of a tab
 let openPl = null; // {pl, tracks | null, error | null} when one of your playlists is open
-const api = (path, opts = {}) => fetch("https://api.spotify.com" + path, {...opts, headers: {Authorization: `Bearer ${store.get("sp_token")}`}});
+const call = (path, opts) => fetch("https://api.spotify.com" + path, {...opts, headers: {Authorization: `Bearer ${store.get("sp_token")}`}});
+// The access token lasts an hour: on a 401, trade the refresh token for a new one and retry once.
+async function api(path, opts = {}) {
+  const r = await call(path, opts);
+  if (r.status !== 401 || !store.get("sp_refresh") || !(await renew())) return r;
+  return call(path, opts);
+}
 const cover = (images) => (images?.filter((i) => (i.width ?? 64) >= 64).at(-1) ?? images?.at(-1))?.url ?? "";
 
 async function login() {
@@ -57,17 +63,27 @@ function showLogin(note = "") {
 }
 $("sp-login").onclick = login;
 
-async function exchange(code) {
+async function token(fields) {
   const res = await fetch("https://accounts.spotify.com/api/token", {
     method: "POST",
     headers: {"Content-Type": "application/x-www-form-urlencoded"},
-    body: new URLSearchParams({
-      grant_type: "authorization_code", code, redirect_uri: REDIRECT,
-      client_id: clientId, code_verifier: store.get("sp_verifier") || "",
-    }),
+    body: new URLSearchParams({client_id: clientId, ...fields}),
   });
   if (!res.ok) throw new Error(res.status);
-  store.set("sp_token", (await res.json()).access_token);
+  const t = await res.json();
+  store.set("sp_token", t.access_token);
+  if (t.refresh_token) store.set("sp_refresh", t.refresh_token); // Spotify may rotate it: keep the newest
+}
+
+const exchange = (code) => token({grant_type: "authorization_code", code, redirect_uri: REDIRECT, code_verifier: store.get("sp_verifier") || ""});
+
+// One renewal at a time: the lists load in parallel, and a rotated refresh token works only once.
+let renewing = null;
+function renew() {
+  renewing ??= token({grant_type: "refresh_token", refresh_token: store.get("sp_refresh")})
+    .then(() => true, () => { store.del("sp_refresh"); return false; }) // revoked or expired: log in again
+    .finally(() => { renewing = null; });
+  return renewing;
 }
 
 const artOf = (t) => cover(t.album?.images); // largest first: the smallest that is still 64 px
@@ -89,7 +105,7 @@ function pick(t) {
     if (!queuedAs(t.name, artist)) requestSong({artist, title: t.name, duration: t.duration_ms / 1000, art: artOf(t)});
     return;
   }
-  startSong({artist, title: t.name, duration: t.duration_ms / 1000}, {title: t.name, by: artist, art: artOf(t)});
+  startSong({artist, title: t.name, duration: t.duration_ms / 1000, art: artOf(t)}, {title: t.name, by: artist, art: artOf(t)});
 }
 
 function text(t) {
@@ -344,7 +360,7 @@ async function init() {
     window.dispatchEvent(new HashChangeEvent("hashchange"));
     if (note) return showLogin(note);
   }
-  if (store.get("sp_token")) await showLists();
+  if (store.get("sp_token") || store.get("sp_refresh")) await showLists();
   else showLogin();
 }
 

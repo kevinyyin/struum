@@ -35,6 +35,7 @@ class ByTitle(BaseModel):
     artist: str
     title: str
     duration: float
+    art: str = ""  # the Spotify cover, shown instead of the video's thumbnail
 
 
 def sync(*video_ids: str) -> None:
@@ -116,7 +117,7 @@ def serve_queue_once() -> str:
                 node_script("queue.mjs", "finish", item["id"], "failed", "Could not fetch the edited sheet.")
             return "made"
         log.info("making %s - %s for the website", item["artist"], item["title"])
-        sheet, error = make({k: item[k] for k in ("artist", "title", "duration")}, lambda i, name: None)
+        sheet, error = make({k: item[k] for k in ("artist", "title", "duration", "art") if item.get(k)}, lambda i, name: None)
         if sheet:
             node_script("sync.mjs", sheet["video_id"], timeout=900)  # uploaded before the website hears "done"
             node_script("queue.mjs", "finish", item["id"], "done", sheet["video_id"])
@@ -177,7 +178,10 @@ def start(request: dict, video_id: str | None = None) -> dict:
 
 @app.post("/api/songs")
 def create(body: ByUrl | ByTitle):
-    return start(body.model_dump())
+    request = body.model_dump(exclude_unset=True)
+    if not ART.fullmatch(request.get("art", "")):
+        request.pop("art", None)  # only Spotify's image host: anything else falls back to the video thumbnail
+    return start(request)
 
 
 @app.post("/api/songs/{job_id}/cancel")
@@ -208,11 +212,12 @@ def library():
         if f.parent.name != s.get("video_id"):  # a job's temp folder, not a finished song
             continue
         made = s.get("made") or f.stat().st_mtime  # older sheets have no "made": use the file time
-        songs.append({k: s.get(k) for k in ("video_id", "title", "artist", "duration")} | {"made": made})
+        songs.append({k: s.get(k) for k in ("video_id", "title", "artist", "duration", "art")} | {"made": made})
     return sorted(songs, key=lambda s: -s["made"])
 
 
 VID = re.compile(r"^[\w-]{6,20}$")
+ART = re.compile(r"https://[\w.-]+\.scdn\.co/[^\"'()\\\s]*")  # same rule as api/queue.js
 
 
 class ChordEdits(BaseModel):
@@ -244,7 +249,7 @@ def remake(video_id: str):
     then moves to data/trash/."""
     doc = json.loads(saved(video_id).read_text(encoding="utf-8"))
     return start({"url": pipeline.WATCH + video_id, "artist": doc.get("artist") or "", "title": doc.get("title") or "",
-                  "force": True}, video_id)
+                  "art": doc.get("art") or "", "force": True}, video_id)
 
 
 @app.delete("/api/songs/{video_id}")

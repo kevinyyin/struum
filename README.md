@@ -59,7 +59,7 @@ node --test tests/*.mjs
 3. Put the app's client ID in `.env` as `SPOTIFY_CLIENT_ID`.
 4. Log in from the page. The account owner needs Premium for the app to work. If you logged in before playlists were added, log in once more so Strum can read them.
 
-The Liked tab hides itself if Spotify refuses it. A picked song is matched to a YouTube video by artist, title and duration. The login lasts for the browser tab (about an hour); after that the page asks you to log in again.
+The Liked tab hides itself if Spotify refuses it. A picked song is matched to a YouTube video by artist, title and duration. The login stays in this browser: when the hour-long access token runs out, the page renews it on its own, so you log in again only if Spotify revokes it (or you clear site data). Logged in before this change? Log in once more.
 
 ## Hosted copy (Vercel)
 

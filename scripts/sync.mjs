@@ -19,7 +19,7 @@ async function localSongs() {
     try {
       const s = JSON.parse(await readFile(f, "utf8"));
       if (s.video_id !== dir) continue; // a job's temp folder
-      songs.push({video_id: s.video_id, title: s.title ?? null, artist: s.artist ?? null, duration: s.duration ?? null,
+      songs.push({video_id: s.video_id, title: s.title ?? null, artist: s.artist ?? null, duration: s.duration ?? null, art: s.art ?? null,
         made: s.made ?? (await stat(f)).mtimeMs / 1000}); // when it was made (older sheets: file time)
     } catch { /* not a song folder */ }
   }

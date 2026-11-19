@@ -137,7 +137,7 @@ export function findSong(title, artist) {
 const thumb = (id) => {
   const img = el("img", "art");
   img.alt = "";
-  img.src = `https://i.ytimg.com/vi/${encodeURIComponent(id)}/mqdefault.jpg`;
+  img.src = songById(id)?.art || `https://i.ytimg.com/vi/${encodeURIComponent(id)}/mqdefault.jpg`; // a Spotify pick keeps its cover
   img.onerror = () => { img.removeAttribute("src"); };
   return img;
 };
