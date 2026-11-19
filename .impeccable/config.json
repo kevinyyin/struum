@@ -38,6 +38,12 @@
         ],
         "createdAt": "2026-11-13T16:26:46.353Z",
         "reason": "rejected decision-round preview, git-ignored and not shipped; its fonts predate DESIGN.md by design"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "grotesk",
+        "createdAt": "2026-11-17T23:04:30.173Z",
+        "reason": "Claude: Schibsted/Hanken Grotesk are the fonts DESIGN.md declares; finding is a name-match false positive"
       }
     ]
   }

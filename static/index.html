@@ -116,6 +116,32 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
     <div id="sheet" class="sheet"></div>
   </section>
 
+  <section id="view-home" class="col home" hidden>
+    <h1>Strum</h1>
+    <form class="paste search" id="home-search" role="search">
+      <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="m13 13 4.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <label for="home-q" class="sr">Search your songs</label>
+      <input id="home-q" type="search" placeholder="Search for songs, artists…" autocomplete="off" spellcheck="false">
+    </form>
+    <ul class="list" id="home-results" hidden></ul>
+    <div id="home-shelves">
+      <p class="empty" id="home-empty" hidden>No songs yet. Tap + to paste a YouTube link or pick a song from Spotify.</p>
+      <div class="shelf circles" id="home-artists" aria-label="Artists"></div>
+      <section id="home-pls-group">
+        <div class="shelf-head"><h2>Your Playlists</h2><a href="#/playlists">See All</a></div>
+        <div class="shelf" id="home-pls"></div>
+      </section>
+      <section id="home-recent-group">
+        <div class="shelf-head"><h2>Continue Playing</h2><a href="#/songs">See All</a></div>
+        <ul class="list" id="home-recent"></ul>
+      </section>
+      <section id="home-songs-group">
+        <div class="shelf-head"><h2>Your Songs</h2><a href="#/songs">See All</a></div>
+        <div class="shelf big" id="home-songs"></div>
+      </section>
+    </div>
+  </section>
+
   <section id="view-songs" class="col" hidden>
     <h1>Your songs</h1>
     <p class="by" id="songs-sub"></p>
@@ -226,6 +252,11 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
     <audio id="audio" preload="auto"></audio>
   </div>
 </main>
+<nav class="bar" id="bar" aria-label="Main">
+  <a href="#/" id="bar-home" aria-label="Home"><svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.2 12 3.5l9 7.7V20a1 1 0 0 1-1 1h-5.2v-6h-5.6v6H4a1 1 0 0 1-1-1z" fill="currentColor"/></svg></a>
+  <a href="#/spotify" id="bar-add" aria-label="Add a song"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v16M4 12h16" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></a>
+  <a href="#/tuner" id="bar-tuner" aria-label="Tuner"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3v7a4 4 0 0 0 8 0V3M12 14v7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></a>
+</nav>
 <script type="module" src="/static/app.js"></script>
 <script type="module" src="/static/spotify.js"></script>
 </body>
