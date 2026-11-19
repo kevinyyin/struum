@@ -17,6 +17,7 @@ const li = (child) => { const e = el("li"); e.append(child); return e; };
 const CJK = /[぀-ヿ㐀-鿿가-힯]/;
 const VID = /^[\w-]{6,20}$/;
 const audio = $("audio");
+const narrow = matchMedia("(max-width: 760px)"); // phones: a home page and a bottom bar instead of the sidebar
 const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 
 // localStorage can throw (blocked storage), so every access is guarded.
@@ -318,7 +319,71 @@ function drawPlaylists() {
   if (view === "playlist") drawPlaylistPage();
   if (current.sheet) { drawContext(); if (!$("pl-menu").hidden) drawMenu(); }
   markCurrent();
+  drawHome();
 }
+
+/* ---------- home (phones): artists, playlists, continue playing, your songs ---------- */
+
+const recent = () => { try { return JSON.parse(store.get("strum_recent") || "[]"); } catch { return []; } }; // song ids, last opened first
+const art = (id) => { const i = thumb(id); i.loading = "lazy"; return i; };
+const card = (href, cover, title, sub) => {
+  const a = el("a", "card");
+  a.href = href;
+  a.append(cover, el("b", "", title), el("span", "who", sub));
+  return a;
+};
+const chevron = () => { const s = el("span", "chev"); s.innerHTML = `<svg width="9" height="15" viewBox="0 0 10 16" aria-hidden="true"><path d="m2 2 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`; return s; };
+
+function drawHome() {
+  const q = fold($("home-q").value);
+  $("home-shelves").hidden = !!q;
+  $("home-results").hidden = !q;
+  if (q) {
+    const shown = library.filter((s) => fold(`${s.title} ${s.artist}`).includes(q));
+    $("home-results").replaceChildren(...shown.map((s) => li(songLink(s, "item"))));
+    if (!shown.length) $("home-results").append(el("li", "empty", `None of your songs match "${$("home-q").value.trim()}".`));
+    return;
+  }
+  $("home-empty").hidden = library.length > 0;
+
+  const artists = new Map(); // artist -> newest song id, newest first
+  for (const s of library) { const a = tidy(s.title, s.artist).artist; if (a && !artists.has(a)) artists.set(a, s.video_id); }
+  $("home-artists").replaceChildren(...[...artists].slice(0, 16).map(([name, id]) => {
+    const a = el("a", "artist");
+    a.href = "#/songs";
+    a.onclick = () => { $("songs-q").value = name; drawSongs(); };
+    a.append(art(id), el("span", "", name));
+    return a;
+  }));
+  $("home-artists").hidden = !artists.size;
+
+  $("home-pls-group").hidden = !library.length;
+  const newCover = el("span", "cover new");
+  newCover.append(svg("plus"));
+  $("home-pls").replaceChildren(...playlists.map((p) => {
+    const ids = listSongs(p), cover = el("span", ids.length >= 4 ? "cover four" : "cover");
+    if (ids.length) cover.append(...ids.slice(0, ids.length >= 4 ? 4 : 1).map(art)); else cover.append(plTile(p));
+    return card(`#/playlist/${p.id}`, cover, p.name, plural(ids.length, "song"));
+  }), card("#/playlists", newCover, "New playlist", ""));
+
+  const ids = new Set(library.map((s) => s.video_id));
+  const played = recent().filter((id) => ids.has(id));
+  const cont = (played.length ? played.map(songById) : library).slice(0, 3);
+  $("home-recent-group").hidden = !cont.length;
+  $("home-recent").replaceChildren(...cont.map((s) => { const a = songLink(s, "item"); a.append(chevron()); return li(a); }));
+
+  $("home-songs-group").hidden = !library.length;
+  $("home-songs").replaceChildren(...library.slice(0, 12).map((s) => {
+    const {title, artist} = tidy(s.title, s.artist), cover = el("span", "cover");
+    cover.append(art(s.video_id));
+    const c = card(`#/song/${s.video_id}`, cover, title || "Untitled", artist || "YouTube");
+    c.dataset.id = s.video_id;
+    return c;
+  }));
+}
+$("home-q").addEventListener("input", drawHome);
+$("home-search").addEventListener("submit", (e) => { e.preventDefault(); $("home-q").blur(); });
+$("home-q").addEventListener("keydown", (e) => { if (e.key === "Escape" && $("home-q").value) { $("home-q").value = ""; drawHome(); } });
 
 function drawPlaylistPage() {
   const p = plById(shownPl);
@@ -706,7 +771,7 @@ document.addEventListener("keydown", (e) => {
 
 /* ---------- views ---------- */
 
-const VIEWS = ["login", "job", "song", "songs", "spotify", "playlists", "playlist", "tuner"];
+const VIEWS = ["home", "login", "job", "song", "songs", "spotify", "playlists", "playlist", "tuner"];
 let view = "songs";
 
 function show(v) {
@@ -727,6 +792,8 @@ function show(v) {
     ["nav-spotify", v === "spotify"], ["nav-tuner", v === "tuner"]]) {
     if (on) $(id).setAttribute("aria-current", "page"); else $(id).removeAttribute("aria-current");
   }
+  const tab = v === "tuner" ? "bar-tuner" : v === "spotify" || v === "job" ? "bar-add" : "bar-home";
+  for (const a of $("bar").children) if (a.id === tab) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
   markCurrent();
 }
 
@@ -751,8 +818,9 @@ async function route() {
   if (name === "playlist" && plById(id)) { shownPl = id; endRename(); show("playlist"); return drawPlaylistPage(); }
   if (name === "job") return job ? show("job") : (location.hash = "#/");
   if (name === "song" && VID.test(id || "")) return openSong(id, listId);
-  show("songs");
+  show(name === "songs" || !narrow.matches ? "songs" : "home");
 }
+narrow.addEventListener("change", () => { if (view === "home" || view === "songs") route(); });
 
 async function openSong(id, listId = null) {
   inList = plById(listId) ? listId : null;
@@ -774,6 +842,7 @@ async function openSong(id, listId = null) {
     renderSheet(sheet);
   }
   if (fresh.delete(id)) { saveFresh(); drawLibrary(); }
+  if (recent()[0] !== id) { store.set("strum_recent", JSON.stringify([id, ...recent().filter((x) => x !== id)].slice(0, 20))); drawHome(); }
   show("song");
   drawContext();
   if (autoplay) { autoplay = false; audio.play().catch(() => {}); }
@@ -1234,10 +1303,9 @@ document.addEventListener("keyup", (e) => { if (e.key === " " && songKey(e)) e.p
 
 /* ---------- making a sheet ---------- */
 
-// On phones and narrow windows the sidebar is a tab bar, so the link box moves to the Your songs page.
+// On phones and narrow windows there is no sidebar, so the link box moves to the + (Spotify) page.
 {
-  const narrow = matchMedia("(max-width: 760px)");
-  const place = () => (narrow.matches ? $("songs-sub") : document.querySelector(".side .nav")).after($("go"));
+  const place = () => (narrow.matches ? $("sp-sub") : document.querySelector(".side .nav")).after($("go"));
   narrow.addEventListener("change", place);
   place();
 }
