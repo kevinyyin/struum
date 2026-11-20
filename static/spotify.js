@@ -87,6 +87,7 @@ function renew() {
 }
 
 const artOf = (t) => cover(t.album?.images); // largest first: the smallest that is still 64 px
+const bigArt = (t) => t.album?.images?.[0]?.url ?? ""; // saved with the song: the grid shows covers full width
 
 function art(t) {
   const img = el("img", "art");
@@ -102,10 +103,10 @@ function pick(t) {
   const made = findSong(t.name, artist);
   if (made) { location.hash = `#/song/${made}`; return; }
   if (!canMakeSongs()) { // hosted: ask the Mac
-    if (!queuedAs(t.name, artist)) requestSong({artist, title: t.name, duration: t.duration_ms / 1000, art: artOf(t)});
+    if (!queuedAs(t.name, artist)) requestSong({artist, title: t.name, duration: t.duration_ms / 1000, art: bigArt(t)});
     return;
   }
-  startSong({artist, title: t.name, duration: t.duration_ms / 1000, art: artOf(t)}, {title: t.name, by: artist, art: artOf(t)});
+  startSong({artist, title: t.name, duration: t.duration_ms / 1000, art: bigArt(t)}, {title: t.name, by: artist, art: artOf(t)});
 }
 
 function text(t) {
